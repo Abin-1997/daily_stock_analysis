@@ -62,6 +62,14 @@ class ReportLanguageTestCase(unittest.TestCase):
         self.assertEqual(infer_decision_type_from_advice("继续持有"), "hold")
         self.assertEqual(infer_decision_type_from_advice("建议洗盘观察"), "hold")
         self.assertEqual(infer_decision_type_from_advice("不建议买入"), "hold")
+        self.assertEqual(
+            infer_decision_type_from_advice("当前不跌破支撑位继续持有"),
+            "hold",
+        )
+        self.assertEqual(
+            infer_decision_type_from_advice("不破支撑后仍可持有"),
+            "hold",
+        )
 
 
 if __name__ == "__main__":

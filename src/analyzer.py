@@ -973,7 +973,7 @@ def _capital_flow_bias_with_status(
         _coerce_numeric_value(stock_flow.get("inflow_10d")),
     ]
     if all(value is None for value in numeric_values):
-        return "unavailable"
+        return "unavailable", "missing_or_na_flow_fields"
 
     ordered_signals = [
         _flow_direction(value) for value in numeric_values

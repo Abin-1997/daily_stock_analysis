@@ -337,6 +337,37 @@ _DECISION_INTENT_NEGATIONS = (
     " never",
 )
 
+_DECISION_INTENT_NEGATION_SCOPE_BREAK_CHARS = "，,。；;:!?！？"
+_DECISION_INTENT_NEGATION_CONNECTORS = (
+    "建议",
+    "应",
+    "应当",
+    "宜",
+    "先",
+    "再",
+    "暂",
+    "暂时",
+    "可",
+    "可以",
+    "需要",
+    "需",
+    "继续",
+)
+
+
+def _strip_decision_negation_connectors(text: str) -> str:
+    """Remove common advisory connectors between a negation token and decision word."""
+    suffix = text.strip()
+    changed = True
+    while changed:
+        changed = False
+        for connector in _DECISION_INTENT_NEGATION_CONNECTORS:
+            if suffix.startswith(connector):
+                suffix = suffix[len(connector):].strip()
+                changed = True
+                break
+    return suffix
+
 
 def normalize_report_language(value: Optional[str], default: str = "zh") -> str:
     """Normalize report language to a supported short code."""
@@ -427,12 +458,19 @@ def _first_non_negated_position(text: str, token: str) -> Optional[int]:
             if not suffix:
                 negated = True
                 break
-            if any(ch in suffix for ch in "，,。；;:!?！？"):
+            if any(ch in suffix for ch in _DECISION_INTENT_NEGATION_SCOPE_BREAK_CHARS):
                 continue
-            if len(suffix) > 6:
+            normalized_suffix = _strip_decision_negation_connectors(suffix)
+            if not normalized_suffix:
+                negated = True
+                break
+            if any(ch in normalized_suffix for ch in _DECISION_INTENT_NEGATION_SCOPE_BREAK_CHARS):
                 continue
-            negated = True
-            break
+            if len(normalized_suffix) > 6 and token not in normalized_suffix:
+                continue
+            if normalized_suffix.startswith(token):
+                negated = True
+                break
         if negated:
             continue
         else:

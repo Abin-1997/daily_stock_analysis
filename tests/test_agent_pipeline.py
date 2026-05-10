@@ -591,6 +591,42 @@ class TestAgentResultConversion(unittest.TestCase):
         self.assertEqual(result.operation_advice, "买入")
         self.assertEqual(result.decision_type, "buy")
 
+    def test_convert_missing_decision_type_preserves_conditional_hold_advice(self):
+        """Condition-hold wording should remain hold when decision_type is not provided."""
+        pipeline = self._make_pipeline()
+
+        from src.agent.executor import AgentResult
+        from src.enums import ReportType
+        from src.stock_analyzer import BuySignal, TrendAnalysisResult, TrendStatus
+
+        agent_result = AgentResult(
+            success=True,
+            content="{}",
+            dashboard={
+                "operation_advice": "不跌破支撑位继续持有",
+                "sentiment_score": 72,
+            },
+            provider="gemini",
+        )
+        trend_result = TrendAnalysisResult(
+            code="600519",
+            trend_status=TrendStatus.BULL,
+            buy_signal=BuySignal.STRONG_BUY,
+            signal_score=78,
+        )
+
+        result = pipeline._agent_result_to_analysis_result(
+            agent_result,
+            "600519",
+            "贵州茅台",
+            ReportType.SIMPLE,
+            "q-conditional-hold-advice",
+            trend_result=trend_result,
+        )
+
+        self.assertEqual(result.operation_advice, "不跌破支撑位继续持有")
+        self.assertEqual(result.decision_type, "hold")
+
     def test_convert_empty_top_level_advice_uses_nested_dashboard_advice(self):
         """Empty top-level advice dict should not block nested dashboard fallback."""
         pipeline = self._make_pipeline()

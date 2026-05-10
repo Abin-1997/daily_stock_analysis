@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - [修复] 修正分析 API 对北交所 `BJ` 前缀与 `.BJ` 后缀股票代码的校验，保持前端自动补全与 Tushare `ts_code` 调用格式一致。
 - [修复] 大盘复盘“近三日催化线索”改为明确展示摘要片段、来源日期和 URL，避免把搜索摘要截断内容误呈现为完整事件。
 - [改进] 个股报告操作建议增加支撑/压力位与主力资金流校准，减少仅因单日涨跌导致买入/卖出剧烈切换，并补充“震荡观望、洗盘观察”等中性建议。
-- [文档] 本次决策稳定性与提示词约束改动仅调整分析侧行为和回测映射，不涉及模型名、provider、Base URL、LiteLLM 兼容边界、配置保存语义或历史配置清理/迁移逻辑；核验证据为：仅变更 `src/core/backtest_engine.py` 与 `tests/test_backtest_engine.py`（含“先观望再买入/观望后买入”回归断言），未改动 `src/config.py` 与运行时配置持久化链路。
+- [文档] 本次决策稳定性与提示词约束改动仅保持运行时模型/provider/Base URL/发布语义不变，不改动配置持久化与环境语义；但涉及 `src/analyzer.py`、`src/core/pipeline.py`、`src/report_language.py` 与 `src/agent` 相关决策后处理/提示词路径的运行时行为，请回归验证决策落盘与报告口径映射。
 
 ## [3.15.0] - 2026-05-05
 

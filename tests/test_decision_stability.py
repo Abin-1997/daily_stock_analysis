@@ -164,6 +164,37 @@ def test_skips_calibration_when_capital_flow_is_unavailable() -> None:
     assert "未使用资金流校准" in sell_result.dashboard["decision_stability"]["reason"]
 
 
+def test_skips_calibration_when_capital_flow_values_are_na() -> None:
+    result = _result(
+        decision_type="buy",
+        operation_advice="买入",
+        score=66,
+        current_price=33.0,
+    )
+
+    stabilize_decision_with_structure(
+        result,
+        SimpleNamespace(support_levels=[30.0], resistance_levels=[34.0]),
+        {
+            "capital_flow": {
+                "status": "ok",
+                "data": {
+                    "stock_flow": {
+                        "main_net_inflow": "N/A",
+                        "inflow_5d": "N/A",
+                        "inflow_10d": "N/A",
+                    }
+                },
+            }
+        },
+    )
+
+    assert result.decision_type == "buy"
+    assert result.operation_advice == "买入"
+    assert result.dashboard["decision_stability"]["applied"] is False
+    assert "未使用资金流校准" in result.dashboard["decision_stability"]["reason"]
+
+
 def test_skips_calibration_when_capital_flow_status_is_unavailable_case_insensitive() -> None:
     buy_result = _result(
         decision_type="buy",
