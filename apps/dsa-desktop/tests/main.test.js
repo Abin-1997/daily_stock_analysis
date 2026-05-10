@@ -478,10 +478,10 @@ test('restorePackagedRuntimeStateFromBackup skips backup when app version did no
   assert.deepEqual(restoreResult.restored, []);
   assert.deepEqual(restoreResult.failed, []);
   assert.equal(restoreResult.skipped.length, 1);
-  assert.match(restoreResult.skipped[0], /version 3\.12\.0 did not change/);
+  assert.match(restoreResult.skipped[0], /stale backup target 3\.12\.0 was discarded/);
   assert.equal(fs.readFileSync(targetEnvPath, 'utf-8'), 'user-change-after-aborted-install\n');
-  assert.equal(fs.existsSync(backupRoot), true);
-  assert.deepEqual(JSON.parse(fs.readFileSync(manifestPath, 'utf-8')).files, ['.env']);
+  assert.equal(fs.existsSync(backupRoot), false);
+  assert.equal(fs.existsSync(manifestPath), false);
 });
 
 test('stopBackend waits for backend process exit', async (t) => {

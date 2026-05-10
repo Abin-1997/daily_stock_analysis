@@ -502,9 +502,10 @@ function restorePackagedRuntimeStateFromBackup() {
     (versionComparison === 0 || (versionComparison === null && backupAppVersion === currentAppVersion))
   );
   if (isSameAppVersion) {
-    const reason = `manifest (app version ${currentAppVersion} did not change after update attempt)`;
+    const reason = `stale backup target ${backupAppVersion} was discarded because current version did not change`;
     result.skipped.push(reason);
-    logLine(`[update] skipped runtime restore because app version did not change after update attempt: ${currentAppVersion}`);
+    cleanupUpdateBackupRoot();
+    logLine(`[update] discarded runtime restore backup because app version did not change after update attempt: ${currentAppVersion}`);
     return result;
   }
 

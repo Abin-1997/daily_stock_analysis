@@ -106,6 +106,12 @@ npm test
 npm run build
 ```
 
+在 Windows 发布复核环境，还可额外执行：
+
+```powershell
+./scripts/verify-desktop-updater-artifacts.ps1 -ReleaseTag v$(node -p "require('./apps/dsa-desktop/package.json').version")
+```
+
 > 预期当前执行环境不支持生成 Windows `Setup*.exe` 时，请在交付说明中明确注明平台限制，并要求指定的 Windows 发布链路复核人补齐该项验证。
 
 3. 检查更新元数据是否产出
