@@ -2521,7 +2521,6 @@ class SearchService:
             padded = hk_digits.zfill(5)
             short = str(int(hk_digits)) if hk_digits.isdigit() else hk_digits.lstrip("0")
             cls._append_unique(terms, padded)
-            cls._append_unique(terms, short)
             cls._append_unique(terms, f"HK{padded}")
             cls._append_unique(terms, f"{padded}.HK")
             cls._append_unique(terms, f"{short}.HK")

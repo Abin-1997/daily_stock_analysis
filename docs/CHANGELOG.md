@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - [修复] 为 OpenAI-compatible 渠道补充 MiMo / LiteLLM fallback pricing 注册路径：在 Tool / Analyzer / 系统配置联调测试路径复用 `register_fallback_model_pricing`，避免未知模型因缺失计费信息导致调用失败。
 - [文档] 同步说明 fallback pricing 注册与 MiniMax / 小米 MiMo 兼容配置边界，补充相关 provider 示例与回退触发条件，限定为本次 #1282 修复范围内更新。
 - [改进] 个股新闻检索新增可解释相关度评分与 direct_company_news / sector_related_news / macro_market_news 分层，优先展示命中股票代码或公司主体的新闻。
+- [修复] 收紧港股新闻相关度中的裸短码匹配，避免将指数点数等普通数字误判为目标股票代码。
 
 ## [3.17.1] - 2026-05-16
 

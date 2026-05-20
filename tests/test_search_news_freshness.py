@@ -462,6 +462,21 @@ class SearchNewsFreshnessTestCase(unittest.TestCase):
         self.assertEqual(resp.results[0].relevance_category, "direct_company_news")
         self.assertEqual(resp.results[1].relevance_category, "sector_related_news")
 
+    def test_hk_stock_bare_short_code_does_not_match_index_points(self) -> None:
+        """Bare HK short codes should not make index-point headlines direct hits."""
+        result = SearchService._score_news_relevance(
+            _result(
+                "恒生指数大涨700点 科技股普遍反弹",
+                datetime.now().date().isoformat(),
+                snippet="港股市场情绪回暖，指数走强。",
+            ),
+            stock_code="hk00700",
+            stock_name="腾讯控股",
+        )
+
+        self.assertNotEqual(result.relevance_category, "direct_company_news")
+        self.assertNotIn("股票代码 700", "；".join(result.relevance_reasons or []))
+
     def test_us_stock_ticker_relevance_beats_ambiguous_company_word(self) -> None:
         """US ticker hits should outrank ambiguous common-word company-name noise."""
         fresh = datetime.now().date().isoformat()
