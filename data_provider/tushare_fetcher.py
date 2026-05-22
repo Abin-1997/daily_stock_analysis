@@ -129,7 +129,6 @@ class TushareFetcher(BaseFetcher):
     
     name = "TushareFetcher"
     priority = int(os.getenv("TUSHARE_PRIORITY", "2"))  # 默认优先级，会在 __init__ 中根据配置动态调整
-    supports_dotted_a_share_prefix = True
 
     def __init__(self, rate_limit_per_minute: int = 80):
         """
@@ -327,13 +326,6 @@ class TushareFetcher(BaseFetcher):
         """Build the legacy tushare symbol while preserving explicit SH/SZ hints."""
         code = normalize_stock_code(stock_code)
         exchange_hint = cls._detect_exchange_hint(stock_code)
-        upper_code = code.upper()
-
-        if "." in upper_code:
-            prefix, base = upper_code.split(".", 1)
-            if prefix in ("SH", "SS", "SZ", "BJ") and base.isdigit():
-                code = base
-                exchange_hint = "SH" if prefix == "SS" else prefix
 
         if code == '000001' and exchange_hint == 'SH':
             return 'sh000001'
@@ -365,15 +357,9 @@ class TushareFetcher(BaseFetcher):
         """
         raw_code = stock_code.strip()
         
-        # Already has suffix or a dotted exchange prefix such as SH.600519.
+        # Already has suffix.
         if '.' in raw_code:
             upper = raw_code.upper()
-            if upper.startswith(("SH.", "SS.", "SZ.", "BJ.")):
-                prefix, code = upper.split(".", 1)
-                if code.isdigit():
-                    exchange = "SH" if prefix == "SS" else prefix
-                    return f"{code}.{exchange}"
-
             code = normalize_stock_code(raw_code)
             exchange_hint = self._detect_exchange_hint(raw_code)
             if exchange_hint in ("SH", "SZ", "BJ") and code.isdigit():

@@ -74,7 +74,6 @@ class BaostockFetcher(BaseFetcher):
     
     name = "BaostockFetcher"
     priority = int(os.getenv("BAOSTOCK_PRIORITY", "3"))
-    supports_dotted_a_share_prefix = True
     
     def __init__(self):
         """初始化 BaostockFetcher"""
@@ -151,16 +150,14 @@ class BaostockFetcher(BaseFetcher):
         if _is_hk_market(raw_code):
             raise DataFetchError(f"BaostockFetcher 不支持港股 {raw_code}，请使用 AkshareFetcher")
 
-        # 已经包含 Baostock 前缀的情况，兼容 STOCK_LIST 被统一转大写后的 SH.600519。
-        if upper.startswith(('SH.', 'SZ.')):
-            prefix, code = upper.split('.', 1)
-            if code.isdigit() and len(code) == 6:
-                return f"{prefix.lower()}.{code}"
+        # 保留既有小写 baostock 格式输入的内部容错，但用户配置仍推荐 6 位裸代码。
+        if raw_code.startswith(('sh.', 'sz.')):
+            return raw_code.lower()
 
         exchange_hint = None
-        if upper.startswith(('SH', 'SS')) or upper.endswith(('.SH', '.SS')):
+        if upper.endswith(('.SH', '.SS')):
             exchange_hint = 'sh'
-        elif upper.startswith('SZ') or upper.endswith('.SZ'):
+        elif upper.endswith('.SZ'):
             exchange_hint = 'sz'
 
         code = normalize_stock_code(raw_code)
@@ -176,9 +173,9 @@ class BaostockFetcher(BaseFetcher):
                 return f"sz.{code}"
 
         # 根据代码前缀判断市场
-        if code.startswith(('600', '601', '603', '688')):
+        if code.startswith(('600', '601', '603', '605', '688')):
             return f"sh.{code}"
-        elif code.startswith(('000', '002', '300')):
+        elif code.startswith(('000', '001', '002', '003', '300', '301')):
             return f"sz.{code}"
         else:
             logger.warning(f"无法确定股票 {code} 的市场，默认使用深市")

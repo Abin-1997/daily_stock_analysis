@@ -159,17 +159,12 @@ class TestTushareFetcherFollowUps(unittest.TestCase):
 
         self.assertEqual(fetcher._convert_stock_code("SZ000001"), "000001.SZ")
         self.assertEqual(fetcher._convert_stock_code("SH600519"), "600519.SH")
-        self.assertEqual(fetcher._convert_stock_code("SZ.000001"), "000001.SZ")
-        self.assertEqual(fetcher._convert_stock_code("SH.601888"), "601888.SH")
         self.assertEqual(fetcher._convert_stock_code("600519.SS"), "600519.SH")
 
     @patch.dict(sys.modules, {"tushare": MagicMock()})
     def test_legacy_realtime_quote_keeps_sz_hint_as_stock_symbol(self) -> None:
         fetcher = self._make_fetcher()
         fetcher._api.quotation.side_effect = Exception("quota")
-
-        self.assertEqual(fetcher._get_legacy_realtime_symbol("SH.000001"), "sh000001")
-        self.assertEqual(fetcher._get_legacy_realtime_symbol("SZ.000001"), "000001")
 
         tushare_module = sys.modules["tushare"]
         tushare_module.get_realtime_quotes.return_value = pd.DataFrame(

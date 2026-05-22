@@ -98,26 +98,6 @@ class TestNormalizeStockCode(unittest.TestCase):
         self.assertEqual(normalize_stock_code("BJ920748"), "920748")
         self.assertEqual(normalize_stock_code("bj920748"), "920748")
 
-    def test_dotted_a_share_prefix(self):
-        """SH.000001 / SZ.000001 should normalize to routing-safe A-share codes."""
-        self.assertEqual(normalize_stock_code("SH.600519"), "600519")
-        self.assertEqual(normalize_stock_code("sh.601888"), "601888")
-        self.assertEqual(normalize_stock_code("SH.000001"), "000001")
-        self.assertEqual(normalize_stock_code("SZ.000001"), "000001")
-        self.assertEqual(normalize_stock_code("sz.300750"), "300750")
-
-    def test_dotted_a_share_prefix_routes_as_cn_market(self):
-        """Dotted A-share prefixes should not bypass CN trading-calendar routing."""
-        from src.core.trading_calendar import get_market_for_stock
-
-        self.assertEqual(get_market_for_stock(normalize_stock_code("SH.000001")), "cn")
-        self.assertEqual(get_market_for_stock(normalize_stock_code("SZ.000001")), "cn")
-
-    def test_dotted_bj_prefix(self):
-        """BJ.920493 should normalize without breaking BSE detection."""
-        self.assertEqual(normalize_stock_code("BJ.920493"), "920493")
-        self.assertTrue(is_bse_code("BJ.920493"))
-
     def test_hk_suffix_normalized_to_canonical_prefix(self):
         """港股 .HK 后缀格式应归一为 HK+5 位数字。"""
         self.assertEqual(normalize_stock_code("1810.HK"), "HK01810")

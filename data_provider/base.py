@@ -74,7 +74,6 @@ def normalize_stock_code(stock_code: str) -> str:
     - 'SZ000001'    -> '000001'   (strip SZ prefix)
     - 'BJ920748'    -> '920748'   (strip BJ prefix, BSE)
     - 'sh600519'    -> '600519'   (case-insensitive)
-    - 'sh.600519'   -> '600519'   (strip dotted SH prefix)
     - '600519.SH'   -> '600519'   (strip .SH suffix)
     - '000001.SZ'   -> '000001'   (strip .SZ suffix)
     - '920748.BJ'   -> '920748'   (strip .BJ suffix, BSE)
@@ -82,9 +81,8 @@ def normalize_stock_code(stock_code: str) -> str:
     - '1810.HK'     -> 'HK01810'  (normalize HK suffix to canonical prefix form)
     - 'AAPL'        -> 'AAPL'     (keep US stock ticker as-is)
 
-    This function is applied at the DataProviderManager layer. Most A-share
-    inputs are reduced to a clean 6-digit code so market routing, cache keys,
-    and duplicate detection all share the same equivalence class.
+    This function is applied at the DataProviderManager layer so that
+    all individual fetchers receive a clean 6-digit code (for A-shares/ETFs).
     """
     code = stock_code.strip()
     upper = code.upper()
@@ -94,13 +92,6 @@ def normalize_stock_code(stock_code: str) -> str:
         candidate = upper[2:]
         if candidate.isdigit() and 1 <= len(candidate) <= 5:
             return f"HK{candidate.zfill(5)}"
-
-    # Strip dotted exchange prefixes for global normalization. Provider-level
-    # routing can still inspect the raw user input before calling this helper.
-    if '.' in code:
-        prefix, base = code.split('.', 1)
-        if prefix.upper() in ('SH', 'SZ', 'SS', 'BJ') and base.isdigit():
-            return base
 
     # Strip SH/SZ prefix (e.g. SH600519 -> 600519)
     if upper.startswith(('SH', 'SZ')) and not upper.startswith('SH.') and not upper.startswith('SZ.'):
@@ -124,15 +115,6 @@ def normalize_stock_code(stock_code: str) -> str:
             return base
 
     return code
-
-
-def _has_dotted_a_share_prefix(stock_code: str) -> bool:
-    """Return True when raw input carries SH./SZ./SS./BJ. exchange intent."""
-    code = (stock_code or "").strip()
-    if "." not in code:
-        return False
-    prefix, base = code.split(".", 1)
-    return prefix.upper() in ("SH", "SZ", "SS", "BJ") and base.isdigit()
 
 
 ETF_PREFIXES = ("51", "52", "56", "58", "15", "16", "18")
@@ -223,15 +205,7 @@ def is_bse_code(code: str) -> bool:
     - Subscription codes: 889xxx
     Note: 900xxx are Shanghai B-shares and must return False.
     """
-    c = normalize_stock_code(code or "")
-    if "." in c:
-        prefix, base = c.split(".", 1)
-        if prefix.upper() == "BJ" and base.isdigit():
-            c = base
-        else:
-            base, suffix = c.rsplit(".", 1)
-            if suffix.upper() == "BJ":
-                c = base
+    c = (code or "").strip().split(".")[0]
     if len(c) != 6 or not c.isdigit():
         return False
 
@@ -309,7 +283,6 @@ class BaseFetcher(ABC):
     
     name: str = "BaseFetcher"
     priority: int = 99  # 优先级数字越小越优先
-    supports_dotted_a_share_prefix: bool = False
     
     @abstractmethod
     def _fetch_raw_data(self, stock_code: str, start_date: str, end_date: str) -> pd.DataFrame:
@@ -584,19 +557,6 @@ class DataFetcherManager:
         "AlphaVantageFetcher": {"us"},
     }
 
-    @staticmethod
-    def _select_daily_stock_code_for_fetcher(
-        fetcher: BaseFetcher,
-        raw_stock_code: str,
-        normalized_stock_code: str,
-    ) -> str:
-        if (
-            _has_dotted_a_share_prefix(raw_stock_code)
-            and getattr(fetcher, "supports_dotted_a_share_prefix", False)
-        ):
-            return raw_stock_code
-        return normalized_stock_code
-    
     def __init__(self, fetchers: Optional[List[BaseFetcher]] = None):
         """
         初始化管理器
@@ -1178,8 +1138,7 @@ class DataFetcherManager:
         """
         from .us_index_mapping import is_us_index_code, is_us_stock_code
 
-        raw_stock_code = (stock_code or "").strip()
-        # Normalize for market routing and shared cache/dedupe equivalence.
+        # Normalize code (strip SH/SZ prefix etc.)
         stock_code = normalize_stock_code(stock_code)
 
         fetchers = self._get_fetchers_snapshot()
@@ -1260,16 +1219,11 @@ class DataFetcherManager:
 
         for attempt, fetcher in enumerate(fetchers, start=1):
             try:
-                fetch_stock_code = self._select_daily_stock_code_for_fetcher(
-                    fetcher,
-                    raw_stock_code,
-                    stock_code,
-                )
                 logger.info(f"[数据源尝试 {attempt}/{total_fetchers}] [{fetcher.name}] 获取 {stock_code}...")
                 df = self._call_fetcher_method(
                     fetcher,
                     "get_daily_data",
-                    stock_code=fetch_stock_code,
+                    stock_code=stock_code,
                     start_date=start_date,
                     end_date=end_date,
                     days=days
@@ -1410,7 +1364,7 @@ class DataFetcherManager:
             UnifiedRealtimeQuote 对象，所有数据源都失败则返回 None
         """
         raw_stock_code = (stock_code or "").strip()
-        # Normalize code for market routing and provider cache lookups.
+        # Normalize code (strip SH/SZ prefix etc.)
         stock_code = normalize_stock_code(stock_code)
 
         from .akshare_fetcher import _is_us_code
@@ -1648,7 +1602,7 @@ class DataFetcherManager:
         Returns:
             ChipDistribution 对象，失败则返回 None
         """
-        # Normalize code for provider cache lookups.
+        # Normalize code (strip SH/SZ prefix etc.)
         stock_code = normalize_stock_code(stock_code)
 
         from .realtime_types import get_chip_circuit_breaker
@@ -1720,7 +1674,7 @@ class DataFetcherManager:
             股票中文名称，所有数据源都失败则返回 None
         """
         raw_stock_code = (stock_code or "").strip()
-        # Normalize code for cache lookups.
+        # Normalize code (strip SH/SZ prefix etc.)
         stock_code = normalize_stock_code(stock_code)
         static_name = STOCK_NAME_MAP.get(stock_code)
 
