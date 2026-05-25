@@ -318,6 +318,50 @@ class TestNotificationRouteFieldsRegistered(unittest.TestCase):
             self.assertIn(key, field_keys, f"{key} missing from schema response")
 
 
+class TestAgentEventAlertRulesJsonField(unittest.TestCase):
+    """Event Monitor legacy JSON config must advertise its P8 boundary."""
+
+    def test_description_marks_legacy_and_web_api_boundaries(self):
+        field = get_field_definition("AGENT_EVENT_ALERT_RULES_JSON")
+        description = field["description"]
+
+        self.assertIn("Legacy JSON supports only price_cross, price_change_percent, and volume_spike", description)
+        self.assertIn("Technical indicator", description)
+        self.assertIn("watchlist", description)
+        self.assertIn("portfolio", description)
+        self.assertIn("market light", description)
+        self.assertIn("Alert API/Web center", description)
+
+
+class TestAgentContextCompressionFields(unittest.TestCase):
+    """Visible chat context compression config must be exposed consistently."""
+
+    def test_profile_uses_chinese_labels_and_enum(self):
+        field = get_field_definition("AGENT_CONTEXT_COMPRESSION_PROFILE")
+
+        self.assertEqual(field["category"], "agent")
+        self.assertEqual(field["ui_control"], "select")
+        self.assertEqual(
+            field["validation"]["enum"],
+            ["cost", "balanced", "long_context_raw_first"],
+        )
+        self.assertEqual(
+            [option["label"] for option in field["options"]],
+            ["成本优先", "均衡推荐", "长上下文原文优先"],
+        )
+
+    def test_trigger_and_protected_turns_can_follow_profile_preset(self):
+        trigger = get_field_definition("AGENT_CONTEXT_COMPRESSION_TRIGGER_TOKENS")
+        protected = get_field_definition("AGENT_CONTEXT_PROTECTED_TURNS")
+
+        self.assertEqual(trigger["default_value"], "")
+        self.assertEqual(protected["default_value"], "")
+        self.assertFalse(trigger["is_required"])
+        self.assertFalse(protected["is_required"])
+        self.assertIn("Leave empty", trigger["description"])
+        self.assertIn("Leave empty", protected["description"])
+
+
 class TestNotificationNoiseFieldsRegistered(unittest.TestCase):
     """P4 notification noise-control keys must be visible in settings schema."""
 
