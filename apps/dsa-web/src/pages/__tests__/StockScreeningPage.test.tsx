@@ -156,4 +156,54 @@ describe('StockScreeningPage', () => {
       maxResults: 20,
     });
   });
+
+  it('clears previous screening candidates when strategy changes', async () => {
+    getAlphaSiftStrategies.mockResolvedValueOnce([
+      {
+        id: 'dual_low',
+        title: '双低选股',
+        description: 'desc',
+        tag: '价值',
+      },
+      {
+        id: 'capital_heat',
+        title: '资金热度',
+        description: 'desc',
+        tag: '动量',
+      },
+    ]);
+    getAlphaSiftStatus.mockResolvedValueOnce({
+      enabled: true,
+      available: true,
+      installSpecIsDefault: true,
+    });
+    screenStocks.mockResolvedValueOnce({
+      enabled: true,
+      candidates: [
+        {
+          rank: 1,
+          code: '000001',
+          name: '旧策略股票',
+          score: 88.5,
+          reason: 'old result',
+          raw: {},
+        },
+      ],
+      candidateCount: 1,
+    });
+
+    render(<StockScreeningPage />);
+
+    expect(await screen.findByText('选股已开启')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /运行选股/ }));
+
+    expect(await screen.findByText('旧策略股票')).toBeInTheDocument();
+    expect(screen.getByText('选股完成')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /资金热度/ }));
+
+    expect(screen.queryByText('旧策略股票')).not.toBeInTheDocument();
+    expect(screen.getByText('等待运行')).toBeInTheDocument();
+    expect(screen.getByText('当前策略：资金热度 · A 股')).toBeInTheDocument();
+  });
 });

@@ -55,6 +55,32 @@ const StockScreeningPage: React.FC = () => {
   const selectedStrategyTag = selectedStrategy?.tag ?? '自定义';
   const displayedStrategy = selectedStrategy ? selectedStrategyTitle : `自定义策略（${strategy}）`;
 
+  const clearScreeningResults = () => {
+    setCandidates([]);
+    setExpandedCode(null);
+  };
+
+  const handleStrategyChange = (nextStrategy: string) => {
+    if (nextStrategy !== strategy) {
+      clearScreeningResults();
+    }
+    setStrategy(nextStrategy);
+  };
+
+  const handleMarketChange = (nextMarket: string) => {
+    if (nextMarket !== market) {
+      clearScreeningResults();
+    }
+    setMarket(nextMarket);
+  };
+
+  const handleMaxResultsChange = (nextMaxResults: number) => {
+    if (nextMaxResults !== maxResults) {
+      clearScreeningResults();
+    }
+    setMaxResults(nextMaxResults);
+  };
+
   useEffect(() => {
     let active = true;
 
@@ -211,7 +237,7 @@ const StockScreeningPage: React.FC = () => {
                       : 'border-border/80 bg-surface/70 hover:border-cyan/45 hover:bg-hover/70'
                   }`}
                   type="button"
-                  onClick={() => setStrategy(item.id)}
+                  onClick={() => handleStrategyChange(item.id)}
                 >
                   <span className="text-base font-semibold text-foreground">{item.title || item.id}</span>
                   <span className="mt-2 block text-sm leading-6 text-secondary-text">
@@ -237,7 +263,7 @@ const StockScreeningPage: React.FC = () => {
             <select
               className="h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm text-foreground outline-none transition-colors focus:border-cyan"
               value={market}
-              onChange={(event) => setMarket(event.target.value)}
+              onChange={(event) => handleMarketChange(event.target.value)}
             >
               {MARKETS.map((item) => (
                 <option key={item.id} value={item.id}>
@@ -252,7 +278,7 @@ const StockScreeningPage: React.FC = () => {
             <input
               className="h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm text-foreground outline-none transition-colors focus:border-cyan"
               value={strategy}
-              onChange={(event) => setStrategy(event.target.value)}
+              onChange={(event) => handleStrategyChange(event.target.value)}
             />
           </label>
 
@@ -264,7 +290,7 @@ const StockScreeningPage: React.FC = () => {
               min={1}
               max={100}
               value={maxResults}
-              onChange={(event) => setMaxResults(Number(event.target.value))}
+              onChange={(event) => handleMaxResultsChange(Number(event.target.value))}
             />
           </label>
 
