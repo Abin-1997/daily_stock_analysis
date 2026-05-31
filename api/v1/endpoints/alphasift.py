@@ -142,10 +142,11 @@ def _install_alphasift(config: Config) -> Dict[str, Any]:
         )
 
     importlib.invalidate_caches()
-    if not _is_alphasift_available():
+    adapter_status = _call_alphasift_status()
+    if not _is_adapter_available(adapter_status):
         raise HTTPException(
             status_code=424,
-            detail={"error": "alphasift_unavailable", "message": "AlphaSift 安装完成，但当前进程仍无法导入 alphasift。请重启后端后重试。"},
+            detail={"error": "alphasift_unavailable", "message": "AlphaSift 安装完成，但适配层当前不可用（available=false）。请检查当前 Python 环境和安装状态后重试。"},
         )
     _get_dsa_adapter()
 
@@ -249,10 +250,15 @@ def _ensure_alphasift_enabled(config: Config) -> None:
 
 def _is_alphasift_available() -> bool:
     try:
-        _call_alphasift_status()
-        return True
+        return _is_adapter_available(_call_alphasift_status())
     except Exception:
         return False
+
+
+def _is_adapter_available(adapter_status: Any) -> bool:
+    if isinstance(adapter_status, dict):
+        return bool(adapter_status.get("available", True))
+    return True
 
 
 def _import_alphasift() -> Any:

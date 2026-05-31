@@ -210,6 +210,10 @@ class AlphaSiftOpportunitiesApiTestCase(unittest.TestCase):
 
         with (
             patch("api.v1.endpoints.alphasift._is_alphasift_available", side_effect=[False, True]),
+            patch(
+                "api.v1.endpoints.alphasift._call_alphasift_status",
+                return_value={"available": True, "supported_markets": ["cn"], "contract_version": "1", "version": "0.2.0", "strategy_count": 1},
+            ),
             patch("api.v1.endpoints.alphasift.subprocess.run", return_value=completed) as run_mock,
             patch("api.v1.endpoints.alphasift._get_dsa_adapter", return_value=_make_adapter_module()),
         ):
@@ -221,6 +225,29 @@ class AlphaSiftOpportunitiesApiTestCase(unittest.TestCase):
         self.assertNotIn("install_spec", payload)
         run_mock.assert_called_once()
         self.assertIn(DEFAULT_ALPHASIFT_TEST_SPEC, run_mock.call_args.args[0])
+
+    def test_install_rejects_when_alphasift_adapter_reports_unavailable(self) -> None:
+        config = self._config(enabled=True)
+        completed = SimpleNamespace(returncode=0, stdout="installed", stderr="")
+
+        with (
+            patch(
+                "api.v1.endpoints.alphasift._call_alphasift_status",
+                side_effect=[
+                    {"available": False},
+                    {"available": False},
+                ],
+            ),
+            patch("api.v1.endpoints.alphasift.subprocess.run", return_value=completed) as run_mock,
+            patch("api.v1.endpoints.alphasift._get_dsa_adapter") as get_adapter_mock,
+        ):
+            with self.assertRaises(HTTPException) as caught:
+                alphasift_endpoint.alphasift_install(config=config)
+
+        self.assertEqual(caught.exception.status_code, 424)
+        self.assertEqual(caught.exception.detail["error"], "alphasift_unavailable")
+        run_mock.assert_called_once()
+        get_adapter_mock.assert_not_called()
 
     def test_install_rejects_untrusted_spec(self) -> None:
         config = self._config(enabled=True, install_spec="git+https://example.com/private/alphasift.git")

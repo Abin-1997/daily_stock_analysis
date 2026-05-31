@@ -132,6 +132,44 @@ describe('alphasiftApi', () => {
     });
   });
 
+  it('rolls back ALPHASIFT_ENABLED when install returns adapter unavailable', async () => {
+    const unavailableError = new Error('AlphaSift 安装完成，但适配层当前不可用（available=false）');
+    (unavailableError as Error & { response: { status: number; data: { error: string; message: string } } }).response = {
+      status: 424,
+      data: {
+        error: 'alphasift_unavailable',
+        message: 'AlphaSift 安装完成，但适配层当前不可用（available=false）。',
+      },
+    };
+    getConfig
+      .mockResolvedValueOnce({ configVersion: 'v1', maskToken: '******' })
+      .mockResolvedValueOnce({ configVersion: 'v2', maskToken: '******' });
+    updateConfig.mockResolvedValue({ success: true });
+    get.mockResolvedValueOnce({
+      data: {
+        enabled: true,
+        available: false,
+        install_spec_is_default: true,
+      },
+    });
+    post.mockRejectedValueOnce(unavailableError);
+
+    await expect(alphasiftApi.enable()).rejects.toThrow('AlphaSift 安装完成，但适配层当前不可用');
+
+    expect(updateConfig).toHaveBeenNthCalledWith(1, {
+      configVersion: 'v1',
+      maskToken: '******',
+      reloadNow: true,
+      items: [{ key: 'ALPHASIFT_ENABLED', value: 'true' }],
+    });
+    expect(updateConfig).toHaveBeenNthCalledWith(2, {
+      configVersion: 'v2',
+      maskToken: '******',
+      reloadNow: true,
+      items: [{ key: 'ALPHASIFT_ENABLED', value: 'false' }],
+    });
+  });
+
   it('loads strategies from the AlphaSift API', async () => {
     get.mockResolvedValueOnce({
       data: {
