@@ -3952,12 +3952,16 @@ class SearchService:
                 stock_code=stock_code,
                 stock_name=stock_name,
                 prefer_chinese=self._should_prefer_chinese_news(stock_code, stock_name),
-                max_results=target_per_dimension,
+                max_results=provider_max_results,
                 log_scope=f"{stock_code}:{provider.name}:{dim['name']}:rank",
             )
             filtered_response = self._filter_ranked_news_for_context(
                 filtered_response,
                 log_scope=f"{stock_code}:{provider.name}:{dim['name']}:admission",
+            )
+            filtered_response = self._limit_search_response(
+                filtered_response,
+                max_results=target_per_dimension,
             )
             results[dim['name']] = filtered_response
             search_count += 1

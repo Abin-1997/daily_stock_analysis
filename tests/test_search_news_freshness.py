@@ -590,7 +590,7 @@ class SearchNewsFreshnessTestCase(unittest.TestCase):
         self.assertEqual([item.title for item in resp.results], ["腾讯控股 00700 发布回购公告"])
 
     def test_comprehensive_intel_filters_fillers_before_prompt_context(self) -> None:
-        """The same admission filter should apply to multi-dimensional intel for prompts."""
+        """Admission filtering should run before per-dimension result limiting."""
         fresh = datetime.now().date().isoformat()
         service, mock_search = self._create_service_with_mock_provider(
             news_max_age_days=3,
@@ -598,20 +598,26 @@ class SearchNewsFreshnessTestCase(unittest.TestCase):
             response=_response(
                 [
                     _result(
-                        "游戏下载页面",
+                        "腾讯控股 00700 极速版安装包下载",
                         fresh,
-                        snippet="安装包 128.5MB，95%好评，点击下载。",
-                        url="https://cdn.example.invalid/game/download",
+                        snippet="当前版本 686.38MB，84%好评，适合下载安装到手机。",
+                        url="https://cdn.example.invalid/apps/00700/download",
                         source="cdn.example.invalid",
                     ),
                     _result(
-                        "附近小姐预约服务",
+                        "腾讯控股 00700 Android 安装包评分",
                         fresh,
-                        snippet="同城上门按摩，套餐预约 yue2345。",
-                        url="https://spam.example.invalid/local/yue2345",
-                        source="spam.example.invalid",
+                        snippet="应用版本 12.8，评分 4.9，安装后可查看行情。",
+                        url="https://apps.example.invalid/tencent/00700.apk",
+                        source="apps.example.invalid",
                     ),
-                    _result("宏观生活资讯", fresh, snippet="泛新闻摘要。"),
+                    _result(
+                        "腾讯控股 00700 iOS 旧版下载",
+                        fresh,
+                        snippet="历史版本安装包 256MB，用户好评率 96%。",
+                        url="https://download.example.invalid/ios/00700",
+                        source="download.example.invalid",
+                    ),
                     _result(
                         "腾讯控股 00700 发布回购公告",
                         fresh,
