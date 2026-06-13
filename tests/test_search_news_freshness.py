@@ -497,6 +497,13 @@ class SearchNewsFreshnessTestCase(unittest.TestCase):
                             source="download.example.invalid",
                         ),
                         _result(
+                            "1000+ 宜昌小姐上门特殊服务",
+                            fresh,
+                            snippet="小姐预约 yue2345，同城约炮、保健按摩、推油套餐。",
+                            url="https://spam.example.invalid/local/yue2345",
+                            source="spam.example.invalid",
+                        ),
+                        _result(
                             "美国调整关税，社群讨论升温",
                             fresh,
                             snippet="社群用户分享生活话题，与目标股票没有直接关系。",
@@ -535,6 +542,13 @@ class SearchNewsFreshnessTestCase(unittest.TestCase):
                         snippet="安装包 128.5MB，95%好评，点击下载。",
                         url="https://cdn.example.invalid/game/download",
                         source="cdn.example.invalid",
+                    ),
+                    _result(
+                        "附近小姐预约服务",
+                        fresh,
+                        snippet="同城上门按摩，套餐预约 yue2345。",
+                        url="https://spam.example.invalid/local/yue2345",
+                        source="spam.example.invalid",
                     ),
                     _result("宏观生活资讯", fresh, snippet="泛新闻摘要。"),
                     _result(

@@ -2183,6 +2183,19 @@ class SearchService:
         r"software|soft|game|games|app|apps|package)(?:$|[/_.?&=-])",
         re.IGNORECASE,
     )
+    _ADULT_SERVICE_SPAM_STRONG_TERMS = (
+        "上门特殊服务", "同城约", "约炮", "援交", "楼凤", "外围", "包夜",
+        "大保健", "莞式", "推油", "全套服务", "成人服务", "色情",
+        "adult service", "escort service", "sex service", "call girl",
+    )
+    _ADULT_SERVICE_SPAM_CONTEXT_TERMS = (
+        "小姐", "上门", "预约", "同城", "按摩", "保健", "足浴", "桑拿",
+        "会所", "技师", "全套", "套餐", "vip",
+    )
+    _ADULT_SERVICE_SPAM_CONTACT_RE = re.compile(
+        r"(?:^|[^a-z0-9])(?:yue|vx|qq|wechat|weixin)[-_]?\d{3,}(?:[^a-z0-9]|$)",
+        re.IGNORECASE,
+    )
 
     def __init__(
         self,
@@ -2684,6 +2697,32 @@ class SearchService:
         )
 
     @classmethod
+    def _has_adult_service_spam_news_page_signal(cls, item: SearchResult) -> bool:
+        """Detect adult-service spam by content signals instead of domain names."""
+        combined_text = " ".join(
+            filter(None, [item.title, item.snippet, item.source, item.url])
+        ).lower()
+
+        if cls._contains_any_news_term(
+            combined_text,
+            cls._ADULT_SERVICE_SPAM_STRONG_TERMS,
+        ):
+            return True
+        if cls._ADULT_SERVICE_SPAM_CONTACT_RE.search(combined_text):
+            return True
+
+        context_hits = sum(
+            1
+            for term in cls._ADULT_SERVICE_SPAM_CONTEXT_TERMS
+            if term.lower() in combined_text
+        )
+        has_service_anchor = cls._contains_any_news_term(
+            combined_text,
+            ("小姐", "按摩", "足浴", "桑拿", "会所", "技师"),
+        )
+        return has_service_anchor and context_hits >= 3
+
+    @classmethod
     def _score_news_relevance(
         cls,
         item: SearchResult,
@@ -2885,6 +2924,7 @@ class SearchService:
 
         candidates: List[SearchResult] = []
         dropped_low_quality = 0
+        dropped_adult_spam = 0
         dropped_zero_relevance = 0
 
         for item in response.results:
@@ -2897,6 +2937,12 @@ class SearchService:
                 and cls._has_low_quality_news_page_signal(item)
             ):
                 dropped_low_quality += 1
+                continue
+            if (
+                not is_official_source
+                and cls._has_adult_service_spam_news_page_signal(item)
+            ):
+                dropped_adult_spam += 1
                 continue
             candidates.append(item)
 
@@ -2912,14 +2958,16 @@ class SearchService:
         else:
             filtered_results = candidates
 
-        if dropped_low_quality or dropped_zero_relevance:
+        if dropped_low_quality or dropped_adult_spam or dropped_zero_relevance:
             logger.info(
-                "[新闻准入] %s: provider=%s, total=%s, kept=%s, drop_low_quality=%s, drop_zero_relevance=%s",
+                "[新闻准入] %s: provider=%s, total=%s, kept=%s, "
+                "drop_low_quality=%s, drop_adult_spam=%s, drop_zero_relevance=%s",
                 log_scope,
                 response.provider,
                 len(response.results),
                 len(filtered_results),
                 dropped_low_quality,
+                dropped_adult_spam,
                 dropped_zero_relevance,
             )
 
