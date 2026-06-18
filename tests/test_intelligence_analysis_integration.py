@@ -135,6 +135,19 @@ class PersistedIntelligenceAnalysisIntegrationTestCase(unittest.TestCase):
                 "scope_value": "00700",
                 "market": "hk",
             },
+            {
+                "source_name": "hk-trimmed-symbol-feed",
+                "source_type": "rss",
+                "title": "Trimmed HK code symbol feed",
+                "summary": "Trimmed HK source should match canonical analysis code.",
+                "url": "https://news.example.com/hk-trimmed-code",
+                "source": "hk-trimmed-symbol-feed",
+                "published_at": now,
+                "fetched_at": now,
+                "scope_type": "symbol",
+                "scope_value": "HK700",
+                "market": "hk",
+            },
         ])
 
         pipeline = StockAnalysisPipeline.__new__(StockAnalysisPipeline)
@@ -150,6 +163,7 @@ class PersistedIntelligenceAnalysisIntegrationTestCase(unittest.TestCase):
                 self.assertIsNotNone(context)
                 assert context is not None
                 self.assertIn("Plain HK code symbol feed", context)
+                self.assertIn("Trimmed HK code symbol feed", context)
 
     def test_market_review_merges_persisted_market_intelligence(self) -> None:
         analyzer = MarketAnalyzer(config=self.config, region="cn")

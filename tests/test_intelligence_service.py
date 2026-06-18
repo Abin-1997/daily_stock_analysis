@@ -18,6 +18,7 @@ from src.storage import DatabaseManager, IntelligenceItem
 
 RSS_FIXTURE = b'<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel>\n<item><title>Policy support lifts AI supply chain</title><link>https://news.example.com/a</link><description>Market-level catalyst with evidence link.</description><pubDate>Wed, 17 Jun 2026 08:00:00 GMT</pubDate></item>\n<item><title>Second item</title><link>https://news.example.com/b</link><description>Second summary.</description></item>\n</channel></rss>'
 NO_URL_LINK_FIXTURE = b'<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel>\n<item><title>Anonymous item</title><description>No link in this item.</description></item>\n</channel></rss>'
+BAD_ITEM_LINK_FIXTURE = b'<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel>\n<item><title>Bad mail link</title><link>mailto:tips@example.com</link><description>Should be skipped.</description></item>\n<item><title>Good public link</title><link>https://news.example.com/good</link><description>Should be saved.</description></item>\n</channel></rss>'
 
 
 class IntelligenceServiceTestCase(unittest.TestCase):
@@ -42,6 +43,10 @@ class IntelligenceServiceTestCase(unittest.TestCase):
         if host in {"localhost", "localhost.localdomain"}:
             return [
                 (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 0)),
+            ]
+        if host == "shared.example.com":
+            return [
+                (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("100.64.0.1", 0)),
             ]
         return [
             (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0)),
@@ -101,11 +106,23 @@ class IntelligenceServiceTestCase(unittest.TestCase):
         with self.assertRaises(IntelligenceServiceError):
             self.service.create_source({"name": "bad", "url": "http://127.0.0.1:8000/rss.xml", "scope_type": "market"})
 
+    def test_shared_address_space_url_is_rejected(self) -> None:
+        with self.assertRaises(IntelligenceServiceError):
+            self.service.create_source({"name": "shared", "url": "https://shared.example.com/rss.xml", "scope_type": "market"})
+
+    def test_duplicate_source_name_is_validation_error(self) -> None:
+        payload = {"name": "dupe", "url": "https://feeds.example.com/rss.xml", "scope_type": "market"}
+        self.service.create_source(payload)
+        with self.assertRaises(IntelligenceServiceError):
+            self.service.create_source(payload)
+
     def test_fetch_enabled_sources_is_fail_open(self) -> None:
         self.service.create_source({"name": "good-feed", "url": "https://feeds.example.com/rss.xml", "scope_type": "market"})
         bad = self.service.create_source({"name": "bad-feed", "url": "https://bad.example.com/rss.xml", "scope_type": "market"})
 
         def fake_get(url, **kwargs):
+            self.assertNotIn("trust_env", kwargs)
+            self.assertEqual(kwargs.get("proxies"), {"http": None, "https": None})
             if "bad" in url:
                 raise RuntimeError("network token=secret should not leak")
             return self._mock_response()
@@ -156,6 +173,35 @@ class IntelligenceServiceTestCase(unittest.TestCase):
         self.assertEqual(result["fetched_count"], 1)
         self.assertEqual(result["saved_count"], 1)
         self.assertIn("no-url:intel:", result["sample_items"][0]["url"])
+
+    def test_bad_feed_item_link_is_skipped_without_failing_source(self) -> None:
+        source = self.service.create_source({
+            "name": "mixed-link-feed",
+            "url": "https://feeds.example.com/rss.xml",
+            "scope_type": "market",
+        })
+
+        response = Mock()
+        response.status_code = 200
+        response.url = "https://feeds.example.com/rss.xml"
+        response.headers = {}
+        response.raise_for_status.return_value = None
+        response.iter_content.return_value = [BAD_ITEM_LINK_FIXTURE]
+
+        with patch("src.services.intelligence_service.requests.get", return_value=response):
+            result = self.service.fetch_source(source["id"])
+
+        self.assertEqual(result["fetched_count"], 1)
+        self.assertEqual(result["saved_count"], 1)
+        self.assertEqual(result["sample_items"][0]["url"], "https://news.example.com/good")
+
+    def test_source_templates_can_create_disabled_source(self) -> None:
+        templates = self.service.list_source_templates(market="hk")
+        self.assertEqual(templates["total"], 1)
+        created = self.service.create_source_from_template("hkex-news", {"enabled": False, "name": "hkex-template-copy"})
+        self.assertEqual(created["name"], "hkex-template-copy")
+        self.assertEqual(created["market"], "hk")
+        self.assertFalse(created["enabled"])
 
     def test_same_url_can_be_saved_for_different_scopes(self) -> None:
         market = self.service.create_source({

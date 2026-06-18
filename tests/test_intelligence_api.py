@@ -67,6 +67,29 @@ class IntelligenceApiTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.json()["error"], "validation_error")
 
+    def test_duplicate_source_name_returns_validation_error(self) -> None:
+        payload = {"name": "dupe", "url": "https://feeds.example.com/rss.xml", "scope_type": "market"}
+        first = self.client.post("/api/v1/intelligence/sources", json=payload)
+        second = self.client.post("/api/v1/intelligence/sources", json=payload)
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 400)
+        self.assertEqual(second.json()["error"], "validation_error")
+
+    def test_list_and_create_from_builtin_source_template(self) -> None:
+        templates = self.client.get("/api/v1/intelligence/sources/templates", params={"market": "hk"})
+        self.assertEqual(templates.status_code, 200)
+        body = templates.json()
+        self.assertEqual(body["total"], 1)
+        self.assertEqual(body["items"][0]["template_id"], "hkex-news")
+
+        created = self.client.post(
+            "/api/v1/intelligence/sources/templates/hkex-news",
+            json={"name": "hkex-copy", "enabled": False},
+        )
+        self.assertEqual(created.status_code, 200)
+        self.assertEqual(created.json()["name"], "hkex-copy")
+        self.assertFalse(created.json()["enabled"])
+
     def test_fetch_source_internal_error_is_sanitized(self) -> None:
         create_resp = self.client.post("/api/v1/intelligence/sources", json={"name": "api-feed", "url": "https://feeds.example.com/rss.xml", "source_type": "rss", "scope_type": "market", "market": "cn"})
         self.assertEqual(create_resp.status_code, 200)

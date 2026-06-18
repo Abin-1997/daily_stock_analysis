@@ -15,6 +15,8 @@ from api.v1.schemas.intelligence import (
     IntelligenceSourceCreateRequest,
     IntelligenceSourceItem,
     IntelligenceSourceListResponse,
+    IntelligenceSourceTemplateCreateRequest,
+    IntelligenceSourceTemplateListResponse,
     IntelligenceSourceTestResponse,
 )
 from src.services.intelligence_service import IntelligenceService, IntelligenceServiceError
@@ -64,6 +66,39 @@ def list_sources(
         ))
     except Exception as exc:
         raise _internal_error("List intelligence sources failed", exc)
+
+
+@router.get("/sources/templates", response_model=IntelligenceSourceTemplateListResponse, responses={500: {"model": ErrorResponse}}, summary="List built-in intelligence source templates")
+def list_source_templates(
+    source_type: Optional[str] = Query(None),
+    market: Optional[str] = Query(None),
+) -> IntelligenceSourceTemplateListResponse:
+    try:
+        return IntelligenceSourceTemplateListResponse(**IntelligenceService().list_source_templates(
+            source_type=source_type,
+            market=market,
+        ))
+    except Exception as exc:
+        raise _internal_error("List intelligence source templates failed", exc)
+
+
+@router.post("/sources/templates/{template_id}", response_model=IntelligenceSourceItem, responses={400: {"model": ErrorResponse}, 404: {"model": ErrorResponse}, 500: {"model": ErrorResponse}}, summary="Create intelligence source from a built-in template")
+def create_source_from_template(
+    template_id: str,
+    request: IntelligenceSourceTemplateCreateRequest = IntelligenceSourceTemplateCreateRequest(),
+) -> IntelligenceSourceItem:
+    try:
+        return IntelligenceSourceItem(**IntelligenceService().create_source_from_template(
+            template_id,
+            request.model_dump(exclude_none=True),
+        ))
+    except IntelligenceServiceError as exc:
+        message = str(exc)
+        if "template not found" in message.lower():
+            raise _not_found(message)
+        raise _bad_request(exc)
+    except Exception as exc:
+        raise _internal_error("Create intelligence source from template failed", exc)
 
 
 @router.post("/sources/test", response_model=IntelligenceSourceTestResponse, responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}}, summary="Dry-run an intelligence source payload")

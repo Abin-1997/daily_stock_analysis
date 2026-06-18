@@ -123,6 +123,8 @@ def _symbol_scope_lookup_values(code: str, market: str) -> List[str]:
         trimmed_digits = digits.lstrip("0") or digits
         add_case_variants(normalized_upper)
         add_case_variants(digits)
+        add_case_variants(trimmed_digits)
+        add_case_variants(f"HK{trimmed_digits}")
         add_case_variants(f"{trimmed_digits}.HK")
         add_case_variants(f"{digits}.HK")
         return values

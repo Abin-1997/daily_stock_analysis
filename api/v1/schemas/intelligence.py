@@ -23,6 +23,15 @@ class IntelligenceSourceCreateRequest(BaseModel):
     description: Optional[str] = None
 
 
+class IntelligenceSourceTemplateCreateRequest(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    enabled: Optional[bool] = None
+    scope_type: Optional[ScopeTypeValue] = None
+    scope_value: Optional[str] = Field(None, max_length=64)
+    market: Optional[MarketValue] = None
+    description: Optional[str] = None
+
+
 class IntelligenceSourceItem(BaseModel):
     id: int
     name: str
@@ -40,11 +49,27 @@ class IntelligenceSourceItem(BaseModel):
     updated_at: Optional[str] = None
 
 
+class IntelligenceSourceTemplateItem(BaseModel):
+    template_id: str
+    name: str
+    source_type: str
+    url: str
+    scope_type: str
+    scope_value: Optional[str] = None
+    market: str
+    description: Optional[str] = None
+
+
 class IntelligenceSourceListResponse(BaseModel):
     items: List[IntelligenceSourceItem] = Field(default_factory=list)
     total: int
     page: int
     page_size: int
+
+
+class IntelligenceSourceTemplateListResponse(BaseModel):
+    items: List[IntelligenceSourceTemplateItem] = Field(default_factory=list)
+    total: int
 
 
 class IntelligenceItem(BaseModel):
