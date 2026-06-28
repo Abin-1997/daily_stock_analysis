@@ -2955,13 +2955,23 @@ class SystemConfigServiceTestCase(unittest.TestCase):
         self.assertIn("桌面端导出备份", warning)
 
     def test_update_market_review_region_does_not_trigger_runtime_model_cleanup(self) -> None:
+        litellm_config_path = Path(self.temp_dir.name) / "litellm_config.yaml"
+        litellm_config_path.write_text("model_list: []\n", encoding="utf-8")
+
         self._rewrite_env(
             "MARKET_REVIEW_REGION=cn",
             "LITELLM_MODEL=openai/gpt-4o-mini",
-            "AGENT_LITELLM_MODEL=deepseek/deepseek-chat",
-            "LITELLM_FALLBACK_MODELS=openai/gpt-4o-mini,deepseek/deepseek-v4-pro",
-            "VISION_MODEL=openai/gpt-4-vision",
+            "AGENT_LITELLM_MODEL=openai/gpt-4o",
+            "LITELLM_FALLBACK_MODELS=openai/gpt-4o-mini,openai/gpt-4o",
+            "VISION_MODEL=openai/gpt-4o",
+            f"LITELLM_CONFIG={litellm_config_path}",
+            "LLM_CHANNELS=openai",
+            "LLM_OPENAI_PROTOCOL=openai",
+            "LLM_OPENAI_BASE_URL=https://llm-openai.example.com/v1",
+            "LLM_OPENAI_API_KEYS=legacy-openai-secret",
+            "LLM_OPENAI_MODELS=openai/gpt-4o-mini,openai/gpt-4o",
             "OPENAI_BASE_URL=https://openai.example.com/v1",
+            "OPENAI_API_KEY=sk-openai",
             "OPENAI_MODEL=gpt-4.1",
             "ANTHROPIC_MODEL=claude-sonnet-4-6",
         )
@@ -2977,10 +2987,19 @@ class SystemConfigServiceTestCase(unittest.TestCase):
         current_map = self.manager.read_config_map()
         self.assertEqual(current_map["MARKET_REVIEW_REGION"], "both")
         self.assertEqual(current_map["LITELLM_MODEL"], "openai/gpt-4o-mini")
-        self.assertEqual(current_map["AGENT_LITELLM_MODEL"], "deepseek/deepseek-chat")
-        self.assertEqual(current_map["LITELLM_FALLBACK_MODELS"], "openai/gpt-4o-mini,deepseek/deepseek-v4-pro")
-        self.assertEqual(current_map["VISION_MODEL"], "openai/gpt-4-vision")
+        self.assertEqual(current_map["AGENT_LITELLM_MODEL"], "openai/gpt-4o")
+        self.assertEqual(current_map["LITELLM_FALLBACK_MODELS"], "openai/gpt-4o-mini,openai/gpt-4o")
+        self.assertEqual(current_map["VISION_MODEL"], "openai/gpt-4o")
+        self.assertEqual(current_map["LITELLM_CONFIG"], str(litellm_config_path))
+        self.assertEqual(current_map["LLM_CHANNELS"], "openai")
+        self.assertEqual(current_map["LLM_OPENAI_PROTOCOL"], "openai")
+        self.assertEqual(current_map["LLM_OPENAI_BASE_URL"], "https://llm-openai.example.com/v1")
+        self.assertEqual(current_map["LLM_OPENAI_API_KEYS"], "legacy-openai-secret")
+        self.assertEqual(current_map["LLM_OPENAI_MODELS"], "openai/gpt-4o-mini,openai/gpt-4o")
         self.assertEqual(current_map["OPENAI_BASE_URL"], "https://openai.example.com/v1")
+        self.assertEqual(current_map["OPENAI_API_KEY"], "sk-openai")
+        self.assertEqual(current_map["OPENAI_MODEL"], "gpt-4.1")
+        self.assertEqual(current_map["ANTHROPIC_MODEL"], "claude-sonnet-4-6")
         self.assertFalse(
             any("已同步清理失效的运行时模型引用" in warning for warning in response["warnings"]),
             response["warnings"],
