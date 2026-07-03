@@ -885,6 +885,16 @@ def _prepare_report_for_task_enrichment(
     return enriched_report
 
 
+def _first_non_empty_report_value(*values: Any) -> Any:
+    for value in values:
+        if value is None:
+            continue
+        if isinstance(value, str) and not value.strip():
+            continue
+        return value
+    return None
+
+
 def _ensure_report_action_fields(report_data: Dict[str, Any]) -> Dict[str, Any]:
     enriched_report = dict(report_data)
     meta = dict(enriched_report.get("meta") or {})
@@ -899,7 +909,10 @@ def _ensure_report_action_fields(report_data: Dict[str, Any]) -> Dict[str, Any]:
         explicit_action=raw_result.get("action") or summary.get("action"),
         report_type=meta.get("report_type"),
         report_language=report_language,
-        sentiment_score=summary.get("sentiment_score") or raw_result.get("sentiment_score"),
+        sentiment_score=_first_non_empty_report_value(
+            summary.get("sentiment_score"),
+            raw_result.get("sentiment_score"),
+        ),
         guardrail_reason=_extract_guardrail_reason(raw_result),
         align_with_score=True,
     )
