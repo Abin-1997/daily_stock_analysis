@@ -30,6 +30,19 @@ const diagnosticSummary: RunDiagnosticSummary = {
       details: {
         provider: 'baostock',
         attempts: 2,
+        error_type: 'TimeoutError',
+      },
+    },
+    news: {
+      key: 'news',
+      label: '新闻搜索',
+      status: 'degraded',
+      message: '新闻检索返回 3 条结果，但新闻未进入本次分析输入；报告页相关资讯可能来自后续检索或历史持久化',
+      details: {
+        record_count: 3,
+        analysis_input_status: 'missing',
+        analysis_input_missing_reasons: ['news_context_missing'],
+        evidence_scope: 'retrieval_vs_analysis_input',
       },
     },
     notification: {
@@ -66,7 +79,13 @@ describe('ReportDiagnostics', () => {
     fireEvent.click(screen.getByText('运行状态'));
 
     expect(panel).toHaveAttribute('open');
-    expect(screen.getByText('最近失败后已降级')).toBeInTheDocument();
+    expect(screen.getByText('主要原因')).toBeInTheDocument();
+    expect(screen.getAllByText('最近失败后已降级').length).toBeGreaterThan(0);
+    expect(screen.getByText('数据源: baostock')).toBeInTheDocument();
+    expect(screen.getByText('错误类型: TimeoutError')).toBeInTheDocument();
+    expect(screen.getByText('尝试: 2')).toBeInTheDocument();
+    expect(screen.getByText('真实原因: news_context_missing')).toBeInTheDocument();
+    expect(screen.getByText('证据范围: 检索结果未进分析输入')).toBeInTheDocument();
     expect(screen.getByText('未配置')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '复制排障信息' }));

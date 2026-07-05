@@ -105,16 +105,16 @@ describe('AnalysisContextSummary', () => {
     expect(screen.getByText(/基本面：抓取失败/)).toBeInTheDocument();
     expect(screen.getByText(/news_provider_timeout/)).toBeInTheDocument();
     expect(screen.getByText(/缺失原因: 新闻未进入本次分析输入/)).toBeInTheDocument();
-    expect(screen.getByText(/上方相关资讯通常来自报告页补充检索或历史持久化/)).toBeInTheDocument();
-    expect(screen.getByText(/若需要新闻参与分析，请检查搜索服务配置、网络或接口限流后重新分析/)).toBeInTheDocument();
     expect(screen.getByText(/诊断码: news_context_missing/)).toBeInTheDocument();
+    expect(screen.getByText(/范围: 相关资讯来自报告页补充\/历史/)).toBeInTheDocument();
+    expect(screen.getByText(/处理: 检查搜索配置\/网络\/限流后重跑/)).toBeInTheDocument();
     expect(screen.getByText('来源: 未记录输入来源')).toBeInTheDocument();
     expect(screen.queryByText(/处理建议:/)).not.toBeInTheDocument();
     const fundamentalsBlock = screen.getByText('基本面').closest('.home-subpanel');
     expect(fundamentalsBlock).not.toBeNull();
     const fundamentals = within(fundamentalsBlock as HTMLElement);
     expect(fundamentals.getByText(/缺失原因: 基本面抓取失败/)).toBeInTheDocument();
-    expect(fundamentals.getByText(/请检查对应 provider 配置、网络或接口限流后重新分析/)).toBeInTheDocument();
+    expect(fundamentals.getByText(/处理: 检查 provider 配置\/网络\/限流后重跑/)).toBeInTheDocument();
     expect(fundamentals.queryByText(/缺失原因:.*fundamental_pipeline_failed/)).not.toBeInTheDocument();
     expect(fundamentals.getByText(/诊断码: fundamental_pipeline_failed/)).toBeInTheDocument();
     expect(screen.getAllByText('新闻结果数: 3').some((item) => item.textContent === '新闻结果数: 3')).toBe(true);
@@ -139,7 +139,8 @@ describe('AnalysisContextSummary', () => {
     expect(screen.getByText('Data Limitations:')).toBeInTheDocument();
     expect(screen.getByText(/fundamentals: Fetch failed/)).toBeInTheDocument();
     expect(screen.getByText(/Missing Reasons: News was not included in this LLM input/)).toBeInTheDocument();
-    expect(screen.getByText(/related news above usually comes from supplemental report-page retrieval/)).toBeInTheDocument();
+    expect(screen.getByText(/Scope: Related news is supplemental\/history/)).toBeInTheDocument();
+    expect(screen.getByText(/Action: Check search config\/network\/rate limits and rerun/)).toBeInTheDocument();
     expect(screen.queryByText(/Suggested Action:/)).not.toBeInTheDocument();
   });
 
