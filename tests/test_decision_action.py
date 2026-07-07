@@ -404,6 +404,24 @@ def test_display_decision_type_for_result_uses_display_action_bucket() -> None:
     assert display_decision_type_for_result(Result()) == "buy"
 
 
+@pytest.mark.parametrize("decision_type, expected", [("buy", "buy"), ("sell", "sell")])
+def test_display_decision_type_for_result_falls_back_to_decision_type(
+    decision_type: str,
+    expected: str,
+) -> None:
+    class Result:
+        operation_advice = "未知波动信号"
+        sentiment_score = 72
+        report_language = "zh"
+        action = None
+        action_label = None
+        dashboard = None
+
+    Result.decision_type = decision_type  # type: ignore[attr-defined]
+
+    assert display_decision_type_for_result(Result()) == expected
+
+
 def test_extract_decision_guardrail_reason_reads_dashboard_sources() -> None:
     assert extract_decision_guardrail_reason(
         {

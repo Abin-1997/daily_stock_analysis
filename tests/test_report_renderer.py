@@ -96,6 +96,18 @@ class TestReportRenderer(unittest.TestCase):
         self.assertIn("持有 | 评分 72", out)
         self.assertNotIn("买入 | 评分 72", out)
 
+    def test_render_markdown_summary_keeps_legacy_decision_type_when_display_action_missing(self) -> None:
+        r = _make_result(
+            operation_advice="未知波动信号",
+            decision_type="buy",
+            sentiment_score=72,
+        )
+
+        out = render("markdown", [r], summary_only=True)
+
+        self.assertIsNotNone(out)
+        self.assertIn("🟢买入:1 🟡观望:0 🔴卖出:0", out)
+
     def test_render_markdown_full(self) -> None:
         """Markdown platform renders full report."""
         r = _make_result()

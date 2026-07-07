@@ -526,6 +526,17 @@ def decision_type_for_action(action: Any) -> str:
     return "hold"
 
 
+def _legacy_decision_type_for_result(result: Any) -> Optional[str]:
+    normalized = str(getattr(result, "decision_type", "") or "").strip().lower()
+    if normalized in {"buy", "hold", "sell"}:
+        return normalized
+    if normalized == "strong_buy":
+        return "buy"
+    if normalized == "strong_sell":
+        return "sell"
+    return None
+
+
 def display_decision_type_for_result(
     result: Any,
     *,
@@ -539,4 +550,6 @@ def display_decision_type_for_result(
         report_language=report_language,
         report_type=report_type,
     )
-    return decision_type_for_action(fields["action"])
+    if fields["action"] is not None:
+        return decision_type_for_action(fields["action"])
+    return _legacy_decision_type_for_result(result) or "hold"
