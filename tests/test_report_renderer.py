@@ -117,6 +117,34 @@ class TestReportRenderer(unittest.TestCase):
         self.assertIn("作战计划", out)
         self.assertNotIn("盘中决策护栏", out)
 
+    def test_render_markdown_history_compare_uses_aligned_action_label(self) -> None:
+        r = _make_result(
+            operation_advice="持有",
+            sentiment_score=60,
+        )
+        out = render(
+            "markdown",
+            [r],
+            summary_only=False,
+            extra_context={
+                "history_by_code": {
+                    "600519": [
+                        {
+                            "created_at": "2026-07-01T10:00:00+08:00",
+                            "sentiment_score": 78,
+                            "operation_advice": "持有",
+                            "trend_prediction": "看多",
+                            "action_label": "买入",
+                        }
+                    ]
+                }
+            },
+        )
+
+        self.assertIsNotNone(out)
+        self.assertIn("| 2026-07-01T10:00 | 78 | 买入 | 看多 |", out)
+        self.assertNotIn("| 2026-07-01T10:00 | 78 | 持有 | 看多 |", out)
+
     def test_render_markdown_summary_ignores_unapplied_stability_reason(self) -> None:
         r = _make_result(
             dashboard={
