@@ -66,6 +66,9 @@ from src.schemas.decision_scale import (
         ("触发告警", "alert"),
         ("risk alert", "alert"),
         ("경고", "alert"),
+        ("风险预警，建议卖出", "sell"),
+        ("风险预警，建议减仓", "reduce"),
+        ("Alert, sell", "sell"),
     ],
 )
 def test_normalize_decision_action_matrix(value: str, expected: str) -> None:
@@ -234,6 +237,25 @@ def test_build_action_fields_keeps_multi_guard_advice_empty(advice: str) -> None
     assert build_action_fields(operation_advice=advice) == {
         "action": None,
         "action_label": None,
+    }
+
+
+def test_build_action_fields_prefers_trade_term_over_alert_prefix() -> None:
+    assert build_action_fields(
+        operation_advice="风险预警，建议卖出",
+        align_with_score=True,
+    ) == {
+        "action": "sell",
+        "action_label": "卖出",
+    }
+
+    assert build_action_fields(
+        operation_advice="Alert, sell",
+        report_language="en",
+        align_with_score=True,
+    ) == {
+        "action": "sell",
+        "action_label": "Sell",
     }
 
 

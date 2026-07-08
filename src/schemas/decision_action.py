@@ -118,6 +118,8 @@ _ACTION_PHRASES: Dict[DecisionAction, tuple[str, ...]] = {
 _NEGATED_ACTION_PHRASES: Dict[DecisionAction, tuple[str, ...]] = {
     "avoid": (
         "暂不买入",
+        "不建议买入",
+        "避免买入",
         "不要买入",
         "不宜买入",
         "先不买入",
@@ -335,19 +337,11 @@ def normalize_decision_action(value: Any) -> Optional[DecisionAction]:
     for action, phrases in _NEGATED_ACTION_PHRASES.items():
         if any(_word_or_substring_match(text, phrase) for phrase in phrases):
             negated_matches.add(action)
-    if len(negated_matches) == 1:
-        return next(iter(negated_matches))
-    if len(negated_matches) > 1:
-        return None
 
     guard_matches: set[DecisionAction] = set()
     for action in _GUARD_ACTIONS:
         if any(_word_or_substring_match(text, phrase) for phrase in _ACTION_PHRASES[action]):
             guard_matches.add(action)
-    if len(guard_matches) == 1:
-        return next(iter(guard_matches))
-    if len(guard_matches) > 1:
-        return None
 
     matches: set[DecisionAction] = set()
     for action, phrases in _ACTION_PHRASES.items():
@@ -356,10 +350,19 @@ def normalize_decision_action(value: Any) -> Optional[DecisionAction]:
         if any(_word_or_substring_match(text, phrase) for phrase in phrases):
             matches.add(action)
 
+    if len(negated_matches) == 1:
+        return None if "alert" in guard_matches else next(iter(negated_matches))
+    if len(negated_matches) > 1:
+        return None
+
     if len(matches) == 1:
         return next(iter(matches))
     if matches and matches <= {"hold", "watch"}:
         return "watch" if "watch" in matches else "hold"
+    if len(guard_matches) == 1:
+        return next(iter(guard_matches))
+    if len(guard_matches) > 1:
+        return None
     return None
 
 

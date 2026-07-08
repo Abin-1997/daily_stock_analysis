@@ -929,6 +929,21 @@ def get_bias_status_emoji(value: Any) -> str:
 
 def infer_decision_type_from_advice(value: Any, default: str = "hold") -> str:
     """Infer buy/hold/sell from human-readable operation advice."""
+
+    try:
+        from src.schemas.decision_action import normalize_decision_action
+    except Exception:  # pragma: no cover
+        normalize_decision_action = None
+
+    if normalize_decision_action is not None:
+        action = normalize_decision_action(value)
+        if action == "buy" or action == "add":
+            return "buy"
+        if action in {"reduce", "sell"}:
+            return "sell"
+        if action in {"hold", "watch", "avoid", "alert"}:
+            return "hold"
+
     canonical = _canonicalize_lookup_value(value, _OPERATION_ADVICE_CANONICAL_MAP)
     if canonical in {"strong_buy", "buy"}:
         return "buy"
@@ -962,7 +977,23 @@ def infer_decision_type_from_advice(value: Any, default: str = "hold") -> str:
 def get_signal_level(advice: Any, score: Any, language: Optional[str]) -> tuple[str, str, str]:
     """Return localized signal text, emoji, and stable color tag."""
     normalized_language = normalize_report_language(language)
-    canonical = _canonicalize_lookup_value(advice, _OPERATION_ADVICE_CANONICAL_MAP)
+    canonical: Optional[str]
+    try:
+        from src.schemas.decision_action import normalize_decision_action
+    except Exception:  # pragma: no cover
+        normalize_decision_action = None
+
+    if normalize_decision_action is not None:
+        action = normalize_decision_action(advice)
+        if action == "add":
+            canonical = "buy"
+        elif action in {"hold", "watch", "reduce", "sell", "avoid", "alert", "buy"}:
+            canonical = action
+        else:
+            canonical = _canonicalize_lookup_value(advice, _OPERATION_ADVICE_CANONICAL_MAP)
+    else:
+        canonical = _canonicalize_lookup_value(advice, _OPERATION_ADVICE_CANONICAL_MAP)
+
     try:
         numeric_score = int(float(score))
     except (TypeError, ValueError):

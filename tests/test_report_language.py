@@ -33,6 +33,17 @@ class ReportLanguageTestCase(unittest.TestCase):
         self.assertEqual(emoji, "🟢")
         self.assertEqual(signal_tag, "buy")
 
+    def test_get_signal_level_prefers_trade_term_over_alert_prefix(self) -> None:
+        signal_text, emoji, signal_tag = get_signal_level("风险预警，建议卖出", 40, "zh")
+        self.assertEqual(signal_text, "卖出")
+        self.assertEqual(emoji, "🔴")
+        self.assertEqual(signal_tag, "sell")
+
+        signal_text, emoji, signal_tag = get_signal_level("Alert, sell", 40, "en")
+        self.assertEqual(signal_text, "Sell")
+        self.assertEqual(emoji, "🔴")
+        self.assertEqual(signal_tag, "sell")
+
     def test_get_signal_level_upgrades_legacy_buy_signal_for_high_score(self) -> None:
         self.assertEqual(
             get_signal_level("买入", 85, "zh"),
@@ -56,6 +67,14 @@ class ReportLanguageTestCase(unittest.TestCase):
         self.assertEqual(get_signal_level("回避", 72, "zh"), ("回避", "🟡", "hold"))
         self.assertEqual(get_signal_level("Alert", 72, "en"), ("Alert", "🟡", "hold"))
         self.assertEqual(infer_decision_type_from_advice("风险预警", default="buy"), "hold")
+        self.assertEqual(
+            infer_decision_type_from_advice("风险预警，建议卖出", default="hold"),
+            "sell",
+        )
+        self.assertEqual(
+            infer_decision_type_from_advice("Alert, sell", default="hold"),
+            "sell",
+        )
 
     def test_get_localized_stock_name_replaces_placeholder_for_english(self) -> None:
         self.assertEqual(
