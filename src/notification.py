@@ -1688,12 +1688,12 @@ class NotificationService(
 
         # 每只股票精简信息（控制长度）
         for result in sorted_results:
-            _, emoji, _ = self._get_signal_level(result)
+            signal_text, emoji, _ = self._get_signal_level(result)
 
             # 核心信息行
             lines.append(f"### {emoji} {self._get_display_name(result, report_language)}({result.code})")
             lines.append(
-                f"**{self._get_display_operation_advice(result, report_language)}** | "
+                f"**{signal_text}** | "
                 f"{labels['score_label']}:{result.sentiment_score} | "
                 f"{localize_trend_prediction(result.trend_prediction, report_language)}"
             )
