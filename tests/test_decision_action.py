@@ -70,9 +70,14 @@ from src.schemas.decision_scale import (
         ("경고", "alert"),
         ("风险预警，建议卖出", "sell"),
         ("风险预警，建议减仓", "reduce"),
+        ("风险预警，持有", "alert"),
+        ("风险预警，观望", "alert"),
         ("Alert, sell", "sell"),
+        ("alert, hold", "alert"),
+        ("alert, watch", "alert"),
         ("경고, 매도", "sell"),
         ("경고, 비중축소", "reduce"),
+        ("경고, 보유", "alert"),
         ("경고, 매수", "buy"),
         ("risk alert, avoid buying", "avoid"),
     ],
@@ -307,6 +312,38 @@ def test_build_action_fields_prefers_trade_term_over_alert_prefix() -> None:
     }
 
 
+
+def test_build_action_fields_keeps_guard_with_neutral_advice_before_score_fallback() -> None:
+    assert build_action_fields(
+        operation_advice="风险预警，持有",
+        sentiment_score=90,
+        align_with_score=True,
+    ) == {
+        "action": "alert",
+        "action_label": "预警",
+    }
+
+    assert build_action_fields(
+        operation_advice="alert, watch",
+        sentiment_score=85,
+        report_language="en",
+        align_with_score=True,
+    ) == {
+        "action": "alert",
+        "action_label": "Alert",
+    }
+
+    assert build_action_fields(
+        operation_advice="경고, 보유",
+        sentiment_score=88,
+        report_language="ko",
+        align_with_score=True,
+    ) == {
+        "action": "alert",
+        "action_label": "경고",
+    }
+
+
 @pytest.mark.parametrize(
     "advice",
     [
@@ -469,6 +506,26 @@ def test_display_operation_advice_keeps_guardrailed_neutral_advice() -> None:
         guardrail_reason="等待回踩确认",
         report_language="zh",
     ) == "持有"
+
+
+@pytest.mark.parametrize(
+    ("advice", "language", "expected"),
+    [
+        ("风险预警，观望", "zh", "预警"),
+        ("alert, watch", "en", "Alert"),
+        ("경고, 보유", "ko", "경고"),
+    ],
+)
+def test_display_operation_advice_keeps_guard_with_neutral_advice(
+    advice: str,
+    language: str,
+    expected: str,
+) -> None:
+    assert display_operation_advice(
+        operation_advice=advice,
+        sentiment_score=90,
+        report_language=language,
+    ) == expected
 
 
 def test_display_decision_type_for_result_uses_display_action_bucket() -> None:

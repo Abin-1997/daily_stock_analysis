@@ -364,6 +364,10 @@ def normalize_decision_action(value: Any) -> Optional[DecisionAction]:
     segmented_guard_actions = segmented_actions & set(_GUARD_ACTIONS)
     segmented_trade_actions = segmented_actions - set(_GUARD_ACTIONS)
     if segmented_guard_actions:
+        if segmented_trade_actions <= {"hold", "watch"}:
+            if len(segmented_guard_actions) == 1:
+                return next(iter(segmented_guard_actions))
+            return None
         if len(segmented_trade_actions) == 1:
             return next(iter(segmented_trade_actions))
         if len(segmented_trade_actions) > 1:
@@ -396,10 +400,14 @@ def normalize_decision_action(value: Any) -> Optional[DecisionAction]:
     if len(negated_matches) > 1:
         return None
 
+    if matches and matches <= {"hold", "watch"}:
+        if guard_matches:
+            if len(guard_matches) == 1:
+                return next(iter(guard_matches))
+            return None
+        return "watch" if "watch" in matches else "hold"
     if len(matches) == 1:
         return next(iter(matches))
-    if matches and matches <= {"hold", "watch"}:
-        return "watch" if "watch" in matches else "hold"
     if len(guard_matches) == 1:
         return next(iter(guard_matches))
     if len(guard_matches) > 1:
