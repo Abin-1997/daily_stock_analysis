@@ -164,6 +164,14 @@ const DETAIL_ORDER = [
   'analysis_history_id',
 ];
 
+const ANALYSIS_INPUT_DETAIL_ORDER = [
+  'analysis_input_missing_reasons',
+  'evidence_scope',
+  'analysis_input_status',
+  'analysis_input_block',
+  'analysis_input_source',
+];
+
 const DETAIL_LABELS: Record<ReportLanguage, Record<string, string>> = {
   zh: {
     provider: '数据源',
@@ -321,7 +329,13 @@ const getComponentDetailChips = (
     {},
   );
   const orderedKeys = [
-    ...DETAIL_ORDER.filter((key) => Object.prototype.hasOwnProperty.call(normalizedDetails, key)),
+    ...ANALYSIS_INPUT_DETAIL_ORDER.filter(
+      (key) => Object.prototype.hasOwnProperty.call(normalizedDetails, key),
+    ),
+    ...DETAIL_ORDER.filter(
+      (key) => !ANALYSIS_INPUT_DETAIL_ORDER.includes(key)
+        && Object.prototype.hasOwnProperty.call(normalizedDetails, key),
+    ),
     ...Object.keys(normalizedDetails).filter((key) => !DETAIL_ORDER.includes(key)).sort(),
   ];
 

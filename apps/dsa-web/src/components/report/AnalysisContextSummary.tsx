@@ -178,7 +178,11 @@ const MISSING_REASON_LABELS: Record<ReportLanguage, Record<string, string>> = {
     trend_result_missing: '技术分析结果未进入本次分析输入',
     fundamental_context_missing: '基本面未进入本次分析输入',
     fundamental_pipeline_failed: '基本面抓取失败',
+    fundamentals_not_supported: '当前市场或标的不支持基本面数据',
+    fundamental_coverage_missing: '基本面覆盖数据未进入本次分析输入',
+    fundamental_source_chain_missing: '基本面来源链未进入本次分析输入',
     chip_distribution_missing: '筹码数据未进入本次分析输入',
+    chip_not_supported: '当前市场或标的不支持筹码数据',
     today_missing: '今日数据未进入本次分析输入',
     yesterday_missing: '昨日数据未进入本次分析输入',
   },
@@ -189,7 +193,11 @@ const MISSING_REASON_LABELS: Record<ReportLanguage, Record<string, string>> = {
     trend_result_missing: 'Technical analysis result was not included in this LLM input',
     fundamental_context_missing: 'Fundamentals were not included in this LLM input',
     fundamental_pipeline_failed: 'Fundamental fetch failed',
+    fundamentals_not_supported: 'Fundamental data is not supported for this market or symbol',
+    fundamental_coverage_missing: 'Fundamental coverage was not included in this LLM input',
+    fundamental_source_chain_missing: 'Fundamental sources were not included in this LLM input',
     chip_distribution_missing: 'Chip distribution was not included in this LLM input',
+    chip_not_supported: 'Chip data is not supported for this market or symbol',
     today_missing: 'Today data was not included in this LLM input',
     yesterday_missing: 'Yesterday data was not included in this LLM input',
   },
@@ -200,7 +208,11 @@ const MISSING_REASON_LABELS: Record<ReportLanguage, Record<string, string>> = {
     trend_result_missing: '기술 분석 결과가 이번 LLM 입력에 포함되지 않았습니다',
     fundamental_context_missing: '펀더멘털이 이번 LLM 입력에 포함되지 않았습니다',
     fundamental_pipeline_failed: '펀더멘털 수집에 실패했습니다',
+    fundamentals_not_supported: '현재 시장 또는 종목은 펀더멘털 데이터를 지원하지 않습니다',
+    fundamental_coverage_missing: '펀더멘털 커버리지가 이번 LLM 입력에 포함되지 않았습니다',
+    fundamental_source_chain_missing: '펀더멘털 출처가 이번 LLM 입력에 포함되지 않았습니다',
     chip_distribution_missing: '매물대 데이터가 이번 LLM 입력에 포함되지 않았습니다',
+    chip_not_supported: '현재 시장 또는 종목은 매물대 데이터를 지원하지 않습니다',
     today_missing: '당일 데이터가 이번 LLM 입력에 포함되지 않았습니다',
     yesterday_missing: '전일 데이터가 이번 LLM 입력에 포함되지 않았습니다',
   },
@@ -214,7 +226,11 @@ const MISSING_REASON_ACTIONS: Record<ReportLanguage, Record<string, string>> = {
     trend_result_missing: '检查日线完整性后重跑',
     fundamental_context_missing: '检查基本面数据源/网络/限流后重跑',
     fundamental_pipeline_failed: '检查 provider 配置/网络/限流后重跑',
+    fundamentals_not_supported: '确认当前市场或标的的基本面数据支持情况',
+    fundamental_coverage_missing: '检查基本面数据源覆盖范围后重跑',
+    fundamental_source_chain_missing: '检查基本面 provider 配置后重跑',
     chip_distribution_missing: '确认市场或标的支持筹码数据',
+    chip_not_supported: '更换受支持的数据源或结合其他指标',
     today_missing: '结合实时行情复核后重跑',
     yesterday_missing: '等待日线数据源更新后重跑',
   },
@@ -225,7 +241,11 @@ const MISSING_REASON_ACTIONS: Record<ReportLanguage, Record<string, string>> = {
     trend_result_missing: 'Check daily bar completeness and rerun',
     fundamental_context_missing: 'Check fundamental source/network/rate limits and rerun',
     fundamental_pipeline_failed: 'Check provider config/network/rate limits and rerun',
+    fundamentals_not_supported: 'Confirm fundamental data support for this market or symbol',
+    fundamental_coverage_missing: 'Check fundamental source coverage and rerun',
+    fundamental_source_chain_missing: 'Check fundamental provider configuration and rerun',
     chip_distribution_missing: 'Confirm chip data supports this market or symbol',
+    chip_not_supported: 'Use a supported data source or cross-check other indicators',
     today_missing: 'Cross-check real-time quotes and rerun',
     yesterday_missing: 'Wait for daily source update and rerun',
   },
@@ -236,7 +256,11 @@ const MISSING_REASON_ACTIONS: Record<ReportLanguage, Record<string, string>> = {
     trend_result_missing: '일봉 완전성 확인 후 재실행',
     fundamental_context_missing: '펀더멘털 소스/네트워크/제한 확인 후 재실행',
     fundamental_pipeline_failed: 'provider 설정/네트워크/제한 확인 후 재실행',
+    fundamentals_not_supported: '현재 시장 또는 종목의 펀더멘털 데이터 지원 여부 확인',
+    fundamental_coverage_missing: '펀더멘털 데이터 소스 범위 확인 후 재실행',
+    fundamental_source_chain_missing: '펀더멘털 provider 설정 확인 후 재실행',
     chip_distribution_missing: '시장 또는 종목의 매물대 지원 여부 확인',
+    chip_not_supported: '지원되는 데이터 소스를 사용하거나 다른 지표와 교차 확인',
     today_missing: '실시간 시세와 대조 후 재실행',
     yesterday_missing: '일봉 소스 갱신 후 재실행',
   },
@@ -368,9 +392,10 @@ const formatLimitation = (
 const getMissingReasonSummary = (
   reason: string,
   language: ReportLanguage,
+  status: AnalysisContextPackBlockStatus,
 ): string => {
   const label = MISSING_REASON_LABELS[language][reason];
-  return label || UNKNOWN_MISSING_REASON_LABELS[language];
+  return label || STATUS_FALLBACK_GUIDANCE[language][status] || UNKNOWN_MISSING_REASON_LABELS[language];
 };
 
 const getMissingReasonChips = (
@@ -380,7 +405,8 @@ const getMissingReasonChips = (
   text: (typeof TEXT)[ReportLanguage],
 ): string[] => {
   const chips = (block.missingReasons || []).flatMap((reason) => {
-    const action = MISSING_REASON_ACTIONS[language][reason];
+    const action = MISSING_REASON_ACTIONS[language][reason]
+      || STATUS_FALLBACK_ACTIONS[language][block.status];
     return [
       `${text.diagnosticCodes}: ${reason}`,
       action ? `${text.action}: ${action}` : null,
@@ -536,7 +562,7 @@ export const AnalysisContextSummary: React.FC<AnalysisContextSummaryProps> = ({
               const hasMissingReasons = Boolean(block.missingReasons?.length);
               const guidanceSummary = hasMissingReasons
                 ? block.missingReasons
-                  ?.map((reason) => getMissingReasonSummary(reason, reportLanguage))
+                  ?.map((reason) => getMissingReasonSummary(reason, reportLanguage, block.status))
                   .join(', ')
                 : STATUS_FALLBACK_GUIDANCE[reportLanguage][block.status];
               const guidanceChips = hasMissingReasons

@@ -137,6 +137,44 @@ describe('ReportDiagnostics', () => {
     expect(screen.getByText('证据范围: 仅记录分析输入状态')).toBeInTheDocument();
   });
 
+  it('keeps analysis-input reasons and evidence ahead of the six-chip limit', () => {
+    const crowdedDetailsSummary: RunDiagnosticSummary = {
+      ...diagnosticSummary,
+      components: {
+        dailyData: {
+          key: 'daily_data',
+          label: '日线数据',
+          status: 'degraded',
+          message: '日线数据源成功，但未进入分析输入',
+          details: {
+            provider: 'baostock',
+            fallbackTo: 'SuccessfulDailyFetcher',
+            recordCount: 30,
+            attempts: 2,
+            providerRunStatus: 'degraded',
+            analysisInputBlock: 'daily_bars',
+            analysisInputStatus: 'missing',
+            analysisInputSource: 'storage.get_analysis_context',
+            analysisInputMissingReasons: ['daily_bars_missing'],
+            evidenceScope: 'provider_run_vs_analysis_input',
+          },
+        },
+      },
+    };
+
+    render(<ReportDiagnostics summary={crowdedDetailsSummary} />);
+
+    fireEvent.click(screen.getByText('运行状态'));
+
+    expect(screen.getByText('真实原因: daily_bars_missing')).toBeInTheDocument();
+    expect(screen.getByText('证据范围: 数据源成功但未进分析输入')).toBeInTheDocument();
+    expect(screen.getByText('输入状态: missing')).toBeInTheDocument();
+    expect(screen.getByText('输入块: daily_bars')).toBeInTheDocument();
+    expect(screen.getByText('输入来源: storage.get_analysis_context')).toBeInTheDocument();
+    expect(screen.getByText('数据源: baostock')).toBeInTheDocument();
+    expect(screen.queryByText('记录数: 30')).not.toBeInTheDocument();
+  });
+
   it('opens historical run flow from the diagnostics body', async () => {
     const onOpenRunFlow = vi.fn();
     vi.mocked(historyApi.getDiagnostics).mockResolvedValue(diagnosticSummary);

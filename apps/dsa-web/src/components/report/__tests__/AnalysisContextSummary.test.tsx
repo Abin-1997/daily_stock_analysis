@@ -171,9 +171,42 @@ describe('AnalysisContextSummary', () => {
 
     fireEvent.click(screen.getAllByText('输入数据块')[0]);
 
-    expect(screen.getByText('缺失原因: 未记录明确缺失原因')).toBeInTheDocument();
+    expect(screen.getByText('缺失原因: 数据抓取失败，本次分析未使用该数据')).toBeInTheDocument();
     expect(screen.queryByText(/缺失原因:.*brand_new_internal_code/)).not.toBeInTheDocument();
     expect(screen.getByText('诊断码: brand_new_internal_code')).toBeInTheDocument();
+    expect(screen.getByText('处理: 检查数据源/网络/限流后重跑')).toBeInTheDocument();
+  });
+
+  it('explains the real chip_not_supported reason with actionable guidance', () => {
+    const unsupportedChipOverview: AnalysisContextPackOverview = {
+      ...overview,
+      blocks: [{
+        key: 'chip',
+        label: '筹码',
+        status: 'not_supported',
+        source: null,
+        warnings: [],
+        missingReasons: ['chip_not_supported'],
+      }],
+      counts: {
+        available: 0,
+        missing: 0,
+        notSupported: 1,
+        fallback: 0,
+        stale: 0,
+        estimated: 0,
+        partial: 0,
+        fetchFailed: 0,
+      },
+    };
+
+    render(<AnalysisContextSummary overview={unsupportedChipOverview} />);
+
+    fireEvent.click(screen.getAllByText('输入数据块')[0]);
+
+    expect(screen.getByText('缺失原因: 当前市场或标的不支持筹码数据')).toBeInTheDocument();
+    expect(screen.getByText('处理: 更换受支持的数据源或结合其他指标')).toBeInTheDocument();
+    expect(screen.getByText('诊断码: chip_not_supported')).toBeInTheDocument();
   });
 
   it('surfaces degraded non-zero states in the collapsed summary', () => {
