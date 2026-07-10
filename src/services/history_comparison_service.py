@@ -20,6 +20,24 @@ from src.utils.data_processing import parse_json_field
 logger = logging.getLogger(__name__)
 
 
+def _raw_result_value(raw_result: Any, key: str) -> Any:
+    if not isinstance(raw_result, dict):
+        return None
+
+    value = raw_result.get(key)
+    if value is not None and value != "":
+        return value
+
+    for container_key in ("summary", "dashboard"):
+        container = raw_result.get(container_key)
+        if isinstance(container, dict):
+            nested_value = container.get(key)
+            if nested_value is not None and nested_value != "":
+                return nested_value
+
+    return None
+
+
 def _record_to_signal(
     record: Any,
     *,
@@ -30,9 +48,9 @@ def _record_to_signal(
     if not isinstance(raw_result, dict):
         raw_result = {}
 
-    operation_advice = raw_result.get("operation_advice") or getattr(record, "operation_advice", None)
-    explicit_action = raw_result.get("action")
-    action_label = raw_result.get("action_label")
+    operation_advice = _raw_result_value(raw_result, "operation_advice") or getattr(record, "operation_advice", None)
+    explicit_action = _raw_result_value(raw_result, "action")
+    action_label = _raw_result_value(raw_result, "action_label")
     resolved_report_language = normalize_report_language(
         report_language
         or raw_result.get("report_language")
@@ -41,6 +59,7 @@ def _record_to_signal(
     action_fields = display_action_fields(
         operation_advice=operation_advice,
         explicit_action=explicit_action,
+        legacy_decision_type=_raw_result_value(raw_result, "decision_type"),
         action_label=action_label,
         report_type=getattr(record, "report_type", None),
         report_language=resolved_report_language,

@@ -152,6 +152,24 @@ class HistoryService:
                     add(f"SS{normalized}")
 
         return candidates
+
+    @staticmethod
+    def _raw_result_value(raw_result: Any, key: str) -> Any:
+        if not isinstance(raw_result, dict):
+            return None
+
+        value = raw_result.get(key)
+        if value is not None and value != "":
+            return value
+
+        for container_key in ("summary", "dashboard"):
+            container = raw_result.get(container_key)
+            if isinstance(container, dict):
+                nested_value = container.get(key)
+                if nested_value is not None and nested_value != "":
+                    return nested_value
+
+        return None
     
     def get_history_list(
         self,
@@ -587,10 +605,12 @@ class HistoryService:
 
     def _decision_action_fields_for_record(self, record, raw_result: Any) -> Dict[str, Any]:
         raw = raw_result if isinstance(raw_result, dict) else {}
+        raw_decision_type = self._raw_result_value(raw, "decision_type")
         return display_action_fields(
-            operation_advice=raw.get("operation_advice") or getattr(record, "operation_advice", None),
-            explicit_action=raw.get("action"),
-            action_label=raw.get("action_label"),
+            operation_advice=self._raw_result_value(raw, "operation_advice") or getattr(record, "operation_advice", None),
+            explicit_action=self._raw_result_value(raw, "action"),
+            legacy_decision_type=raw_decision_type,
+            action_label=self._raw_result_value(raw, "action_label"),
             report_type=getattr(record, "report_type", None),
             report_language=normalize_report_language(raw.get("report_language")),
             sentiment_score=getattr(record, "sentiment_score", None),

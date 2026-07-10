@@ -72,6 +72,7 @@ from src.schemas.decision_scale import (
         ("경고, 매도", "sell"),
         ("경고, 비중축소", "reduce"),
         ("경고, 매수", "buy"),
+        ("risk alert, avoid buying", "avoid"),
     ],
 )
 def test_normalize_decision_action_matrix(value: str, expected: str) -> None:
@@ -100,7 +101,6 @@ def test_normalize_decision_action_matrix(value: str, expected: str) -> None:
         "sell-off risk remains low",
         "sell off risk remains low",
         "no sell-off pressure",
-        "risk alert, avoid buying",
         "普通复盘说明",
     ],
 )
@@ -233,6 +233,7 @@ def test_build_action_fields_prioritizes_negated_hold_advice_over_embedded_trade
     [
         "风险预警，避免买入",
         "risk alert, do not buy",
+        "risk alert, avoid buying",
         "风险预警，不建议买入",
     ],
 )

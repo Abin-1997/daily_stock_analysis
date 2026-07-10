@@ -339,6 +339,7 @@ def get_stock_bar(
                 operation_advice=operation_advice,
                 explicit_action=_raw_result_value(raw_result, "action"),
                 action_label=_raw_result_value(raw_result, "action_label"),
+                legacy_decision_type=_raw_result_value(raw_result, "decision_type"),
                 report_type=record.report_type,
                 report_language=normalize_report_language(
                     _raw_result_value(raw_result, "report_language")

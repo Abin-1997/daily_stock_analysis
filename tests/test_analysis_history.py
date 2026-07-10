@@ -887,6 +887,37 @@ class AnalysisHistoryTestCase(unittest.TestCase):
         self.assertEqual(response.items[0].action, "avoid")
         self.assertEqual(response.items[0].action_label, "回避")
 
+    def test_stock_bar_item_prefers_legacy_decision_type_when_action_invalid(self) -> None:
+        if get_stock_bar is None:
+            self.skipTest("fastapi is not installed in this test environment")
+
+        result = self._build_result()
+        result.operation_advice = "持有"
+        result.action = "unknown"
+        result.decision_type = "sell"
+        result.sentiment_score = 88
+
+        saved = self.db.save_analysis_history(
+            result=result,
+            query_id="query_stock_bar_legacy_decision_type",
+            report_type="detailed",
+            news_content="个股正文",
+            context_snapshot=None,
+            save_snapshot=False,
+        )
+        self.assertGreater(saved, 0)
+
+        response = get_stock_bar(
+            start_date=None,
+            end_date=None,
+            limit=10,
+            db_manager=self.db,
+        )
+
+        self.assertEqual(len(response.items), 1)
+        self.assertEqual(response.items[0].action, "sell")
+        self.assertEqual(response.items[0].action_label, "卖出")
+
     def test_history_list_and_detail_use_raw_label_when_action_is_invalid(self) -> None:
         result = self._build_result()
         result.operation_advice = "持有"
@@ -913,6 +944,33 @@ class AnalysisHistoryTestCase(unittest.TestCase):
         self.assertIsNotNone(detail)
         self.assertEqual(detail["action"], "avoid")
         self.assertEqual(detail["action_label"], "回避")
+
+    def test_history_list_and_detail_use_legacy_decision_type_on_persisted_score_mismatch(self) -> None:
+        result = self._build_result()
+        result.operation_advice = "持有"
+        result.action = "unknown"
+        result.decision_type = "sell"
+        result.sentiment_score = 88
+
+        saved = self.db.save_analysis_history(
+            result=result,
+            query_id="query_history_legacy_decision_type",
+            report_type="detailed",
+            news_content="个股正文",
+            context_snapshot=None,
+            save_snapshot=False,
+        )
+        self.assertGreater(saved, 0)
+
+        service = HistoryService(self.db)
+        listing = service.get_history_list(page=1, limit=10)
+        detail = service.resolve_and_get_detail("query_history_legacy_decision_type")
+
+        self.assertEqual(listing["items"][0]["action"], "sell")
+        self.assertEqual(listing["items"][0]["action_label"], "卖出")
+        self.assertIsNotNone(detail)
+        self.assertEqual(detail["action"], "sell")
+        self.assertEqual(detail["action_label"], "卖出")
 
     def test_stock_bar_item_keeps_guardrailed_advice_from_dashboard_when_aligning(self) -> None:
         if get_stock_bar is None:

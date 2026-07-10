@@ -40,6 +40,26 @@ def test_record_to_signal_uses_raw_action_field_before_action_label() -> None:
     assert signal["action_label"] == "매도"
 
 
+def test_record_to_signal_prefers_legacy_decision_type_over_score_for_persisted_records() -> None:
+    signal = _record_to_signal(
+        _history_record(
+            raw_result={
+                "decision_type": "sell",
+                "action": "unknown",
+                "operation_advice": "持有",
+                "report_language": "zh",
+                "guardrail_reason": None,
+            },
+            report_language="zh",
+            sentiment_score=90,
+        )
+    )
+
+    assert signal is not None
+    assert signal["action"] == "sell"
+    assert signal["action_label"] == "卖出"
+
+
 def test_record_to_signal_prefers_action_label_when_action_invalid() -> None:
     signal = _record_to_signal(
         _history_record(

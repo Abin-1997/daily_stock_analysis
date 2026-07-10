@@ -146,6 +146,7 @@ _NEGATED_ACTION_PHRASES: Dict[DecisionAction, tuple[str, ...]] = {
         "no buy",
         "no need to buy",
         "need not buy",
+        "avoid buying",
         "cannot buy",
         "can't buy",
         "cant buy",
@@ -403,6 +404,7 @@ def build_action_fields(
     *,
     operation_advice: Any = None,
     explicit_action: Any = None,
+    legacy_decision_type: Any = None,
     report_type: Any = None,
     report_language: Optional[str] = "zh",
     sentiment_score: Any = None,
@@ -415,12 +417,32 @@ def build_action_fields(
         return {"action": None, "action_label": None}
 
     action = normalize_decision_action(explicit_action)
+    action_from_legacy = False
+    operation_action = normalize_decision_action(operation_advice)
+    legacy_action = normalize_decision_action(legacy_decision_type)
+    action_from_legacy = False
+
+    if action is None:
+        action = operation_action
+
+    if action is None and legacy_action is not None:
+        action = legacy_action
+        action_from_legacy = True
+
+    if action in {"hold", "watch"} and operation_action in {"hold", "watch"} and legacy_action in {
+        "buy",
+        "reduce",
+        "sell",
+    }:
+        action = legacy_action
+        action_from_legacy = True
+
     if action is None:
         advice_text = str(operation_advice or "").strip()
         if advice_text:
             action = normalize_decision_action(advice_text)
 
-    if align_with_score and score_action_conflicts_without_guardrail(
+    if align_with_score and not action_from_legacy and score_action_conflicts_without_guardrail(
         score=sentiment_score,
         action=action,
         guardrail_reason=guardrail_reason,
@@ -451,6 +473,7 @@ def display_action_fields(
     operation_advice: Any = None,
     explicit_action: Any = None,
     action_label: Any = None,
+    legacy_decision_type: Any = None,
     report_type: Any = None,
     report_language: Optional[str] = "zh",
     sentiment_score: Any = None,
@@ -465,6 +488,7 @@ def display_action_fields(
     return build_action_fields(
         operation_advice=operation_advice,
         explicit_action=action_source,
+        legacy_decision_type=legacy_decision_type,
         report_type=report_type,
         report_language=report_language,
         sentiment_score=sentiment_score,
@@ -541,15 +565,19 @@ def display_action_fields_for_result(
     *,
     report_language: Optional[str] = None,
     report_type: Any = None,
+    legacy_decision_type: Any = None,
 ) -> DecisionActionFields:
     """Return display action fields for an AnalysisResult-like object."""
+    if legacy_decision_type is None:
+        legacy_decision_type = getattr(result, "decision_type", None)
 
     fields = display_action_fields(
         **_display_result_kwargs(
             result,
             report_language=report_language,
             report_type=report_type,
-        )
+        ),
+        legacy_decision_type=legacy_decision_type,
     )
     resolved_report_type = report_type or getattr(result, "report_type", None)
     if fields["action"] is None and str(resolved_report_type or "").strip().lower() not in _NON_STOCK_REPORT_TYPES:

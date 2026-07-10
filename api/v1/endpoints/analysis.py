@@ -874,6 +874,24 @@ def _first_non_empty_report_value(*values: Any) -> Any:
     return None
 
 
+def _raw_result_value(raw_result: Any, key: str) -> Any:
+    if not isinstance(raw_result, dict):
+        return None
+
+    value = raw_result.get(key)
+    if value is not None and value != "":
+        return value
+
+    for container_key in ("summary", "dashboard"):
+        container = raw_result.get(container_key)
+        if isinstance(container, dict):
+            nested_value = container.get(key)
+            if nested_value is not None and nested_value != "":
+                return nested_value
+
+    return None
+
+
 def _ensure_report_action_fields(report_data: Dict[str, Any]) -> Dict[str, Any]:
     enriched_report = dict(report_data)
     meta = dict(enriched_report.get("meta") or {})
@@ -884,9 +902,10 @@ def _ensure_report_action_fields(report_data: Dict[str, Any]) -> Dict[str, Any]:
         meta.get("report_language") or raw_result.get("report_language")
     )
     action_fields = display_action_fields(
-        operation_advice=raw_result.get("operation_advice") or summary.get("operation_advice"),
-        explicit_action=raw_result.get("action") or summary.get("action"),
-        action_label=raw_result.get("action_label") or summary.get("action_label"),
+        operation_advice=_raw_result_value(raw_result, "operation_advice") or summary.get("operation_advice"),
+        explicit_action=_raw_result_value(raw_result, "action") or summary.get("action"),
+        action_label=_raw_result_value(raw_result, "action_label") or summary.get("action_label"),
+        legacy_decision_type=_raw_result_value(raw_result, "decision_type") or summary.get("decision_type"),
         report_type=meta.get("report_type"),
         report_language=report_language,
         sentiment_score=_first_non_empty_report_value(
@@ -1139,9 +1158,10 @@ def get_analysis_status(task_id: str) -> TaskStatus:
 
             raw_dict = raw_result if isinstance(raw_result, dict) else {}
             action_fields = display_action_fields(
-                operation_advice=raw_dict.get("operation_advice") or record.operation_advice,
-                explicit_action=raw_dict.get("action"),
-                action_label=raw_dict.get("action_label"),
+                operation_advice=_raw_result_value(raw_dict, "operation_advice") or record.operation_advice,
+                explicit_action=_raw_result_value(raw_dict, "action"),
+                action_label=_raw_result_value(raw_dict, "action_label"),
+                legacy_decision_type=_raw_result_value(raw_dict, "decision_type"),
                 report_type=getattr(record, 'report_type', None),
                 report_language=report_language,
                 sentiment_score=record.sentiment_score if record.sentiment_score is not None else raw_dict.get("sentiment_score"),
@@ -1324,14 +1344,25 @@ def _build_analysis_report(
     raw_result_data = details_data.get("raw_result") if isinstance(details_data.get("raw_result"), dict) else {}
     action_fields = display_action_fields(
         operation_advice=(
-            raw_result_data.get("operation_advice")
-            or details_data.get("operation_advice")
+            _raw_result_value(raw_result_data, "operation_advice")
+            or _raw_result_value(details_data, "operation_advice")
             or summary_data.get("operation_advice")
         ),
-        explicit_action=raw_result_data.get("action") or details_data.get("action") or summary_data.get("action"),
-        action_label=raw_result_data.get("action_label")
-        or details_data.get("action_label")
-        or summary_data.get("action_label"),
+        explicit_action=(
+            _raw_result_value(raw_result_data, "action")
+            or _raw_result_value(details_data, "action")
+            or summary_data.get("action")
+        ),
+        action_label=(
+            _raw_result_value(raw_result_data, "action_label")
+            or _raw_result_value(details_data, "action_label")
+            or summary_data.get("action_label")
+        ),
+        legacy_decision_type=(
+            _raw_result_value(raw_result_data, "decision_type")
+            or _raw_result_value(details_data, "decision_type")
+            or summary_data.get("decision_type")
+        ),
         report_type=meta.report_type,
         report_language=report_language,
         sentiment_score=_first_non_empty_report_value(
