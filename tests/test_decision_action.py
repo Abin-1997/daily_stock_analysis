@@ -587,6 +587,38 @@ def test_display_action_fields_falls_back_to_action_label_when_explicit_action_i
     }
 
 
+def test_display_action_fields_preserves_strong_buy_label_for_explicit_advice() -> None:
+    assert display_action_fields(
+        operation_advice="强烈买入",
+        sentiment_score=72,
+        report_language="zh",
+    ) == {
+        "action": "buy",
+        "action_label": "强烈买入",
+    }
+
+    assert display_action_fields(
+        operation_advice="strong buy",
+        sentiment_score=72,
+        report_language="en",
+    ) == {
+        "action": "buy",
+        "action_label": "Strong Buy",
+    }
+
+
+def test_display_action_fields_prefers_strong_buy_action_label_when_explicit_label_supplied() -> None:
+    assert display_action_fields(
+        operation_advice="持有",
+        action_label="强烈买入",
+        sentiment_score=72,
+        report_language="zh",
+    ) == {
+        "action": "buy",
+        "action_label": "强烈买入",
+    }
+
+
 def test_display_action_fields_for_result_falls_back_when_result_action_is_blank() -> None:
     class Result:
         operation_advice = "持有"

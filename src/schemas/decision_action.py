@@ -40,6 +40,8 @@ _ACTION_LABELS: Dict[str, Dict[str, str]] = {
     "alert": {"zh": "预警", "en": "Alert", "ko": "경고"},
 }
 
+_STRONG_BUY_LABELS = {"zh": "强烈买入", "en": "Strong Buy", "ko": "적극 매수"}
+
 _LOCALIZED_EXPLICIT_ALIASES: Dict[str, DecisionAction] = {
     label: action
     for action, labels in _ACTION_LABELS.items()
@@ -247,6 +249,14 @@ _ENGLISH_AVOIDED_HOLD_ACTION_TERMS = ("adding", "accumulating", "selling", "redu
 _ENGLISH_DEFERRED_ACTION_TERMS = ("buy", "add", "accumulate", "sell", "reduce", "trim")
 _FINANCIAL_COMPOUND_SENTINEL = "financialcompound"
 _ACTION_SEGMENT_SPLIT_RE = re.compile(r"[/,，;；、|]+")
+_STRONG_BUY_TEXT_MARKERS = frozenset(
+    {
+        "强烈买入",
+        "strong_buy",
+        "strong buy",
+        "적극 매수",
+    }
+)
 
 
 def _normalize_key(value: Any) -> str:
@@ -324,6 +334,13 @@ def _explicit_action(value: Any) -> Optional[DecisionAction]:
     if normalized in _ACTION_VALUES:
         return normalized  # type: ignore[return-value]
     return _EXPLICIT_ALIASES.get(normalized)
+
+
+def _has_strong_buy_marker(value: Any) -> bool:
+    normalized = _normalize_key(value)
+    if not normalized:
+        return False
+    return any(marker in normalized for marker in _STRONG_BUY_TEXT_MARKERS)
 
 
 def _explicit_segment_actions(value: Any) -> set[DecisionAction]:
@@ -509,7 +526,7 @@ def display_action_fields(
     if normalize_decision_action(action_source) is None and str(action_label or "").strip():
         action_source = action_label
 
-    return build_action_fields(
+    fields = build_action_fields(
         operation_advice=operation_advice,
         explicit_action=action_source,
         legacy_decision_type=legacy_decision_type,
@@ -519,6 +536,12 @@ def display_action_fields(
         guardrail_reason=guardrail_reason,
         align_with_score=True,
     )
+    if fields["action"] == "buy" and (
+        _has_strong_buy_marker(action_source)
+        or _has_strong_buy_marker(operation_advice)
+    ):
+        fields["action_label"] = _STRONG_BUY_LABELS[normalize_report_language(report_language)]
+    return fields
 
 
 def display_operation_advice(

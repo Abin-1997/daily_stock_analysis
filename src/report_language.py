@@ -986,8 +986,30 @@ def get_signal_level(advice: Any, score: Any, language: Optional[str]) -> tuple[
 
     if normalize_decision_action is not None:
         action = normalize_decision_action(advice)
-        if action in {"add", "hold", "watch", "reduce", "sell", "avoid", "alert", "buy"}:
-            canonical = action
+        canonical_from_text = _canonicalize_lookup_value(
+            advice,
+            _OPERATION_ADVICE_CANONICAL_MAP,
+        )
+        if action in {
+            "add",
+            "hold",
+            "watch",
+            "reduce",
+            "sell",
+            "avoid",
+            "alert",
+            "buy",
+            "strong_buy",
+            "strong_sell",
+        }:
+            if action == "buy" and canonical_from_text == "strong_buy":
+                canonical = "strong_buy"
+            elif action == "sell" and canonical_from_text == "strong_sell":
+                canonical = "strong_sell"
+            else:
+                canonical = action
+        elif canonical_from_text is not None:
+            canonical = canonical_from_text
         else:
             canonical = _canonicalize_lookup_value(advice, _OPERATION_ADVICE_CANONICAL_MAP)
     else:
