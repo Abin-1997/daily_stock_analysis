@@ -314,6 +314,44 @@ class TestReportRenderer(unittest.TestCase):
         self.assertIn("💚 **贵州茅台(600519)**: 强烈买入 | 评分 85", out)
         self.assertNotIn("🟢 **贵州茅台(600519)**: 买入 | 评分 85", out)
 
+    def test_render_reports_preserve_add_action_for_high_score(self) -> None:
+        r = _make_result(sentiment_score=85)
+        r.action = "add"
+        r.action_label = "加仓"
+
+        for platform in ("markdown", "wechat", "brief"):
+            with self.subTest(platform=platform):
+                out = render(platform, [r], summary_only=True)
+
+                self.assertIsNotNone(out)
+                self.assertIn("加仓 | 评分 85", out)
+                self.assertNotIn("强烈买入 | 评分 85", out)
+
+    def test_render_markdown_history_preserves_add_action_for_high_score(self) -> None:
+        r = _make_result()
+        out = render(
+            "markdown",
+            [r],
+            summary_only=False,
+            extra_context={
+                "history_by_code": {
+                    "600519": [
+                        {
+                            "created_at": "2026-07-01T10:00:00+08:00",
+                            "sentiment_score": 85,
+                            "operation_advice": "买入",
+                            "action": "add",
+                            "trend_prediction": "看多",
+                        }
+                    ]
+                }
+            },
+        )
+
+        self.assertIsNotNone(out)
+        self.assertIn("| 2026-07-01T10:00 | 85 | 加仓 |", out)
+        self.assertNotIn("| 2026-07-01T10:00 | 85 | 强烈买入 |", out)
+
     def test_render_markdown_keeps_decision_signal_out_of_summary(self) -> None:
         """Markdown summary stays compact while full details keep DecisionSignal excerpts."""
         r = _with_decision_signal_summary(_make_result())

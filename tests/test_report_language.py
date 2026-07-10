@@ -54,6 +54,18 @@ class ReportLanguageTestCase(unittest.TestCase):
             ("Strong Buy", "💚", "strong_buy"),
         )
 
+    def test_get_signal_level_preserves_add_action_for_high_score(self) -> None:
+        for advice, language, expected in (
+            ("加仓", "zh", "加仓"),
+            ("Add", "en", "Add"),
+            ("추가 매수", "ko", "추가 매수"),
+        ):
+            with self.subTest(language=language):
+                self.assertEqual(
+                    get_signal_level(advice, 85, language),
+                    (expected, "🟢", "buy"),
+                )
+
     def test_get_signal_level_score_fallback_uses_canonical_scale(self) -> None:
         self.assertEqual(get_signal_level("", 28, "zh"), ("减仓", "🟠", "reduce"))
         self.assertEqual(get_signal_level("", 38, "zh"), ("减仓", "🟠", "reduce"))

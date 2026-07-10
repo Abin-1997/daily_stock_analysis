@@ -76,6 +76,7 @@ _OPERATION_ADVICE_CANONICAL_MAP = {
 _OPERATION_ADVICE_TRANSLATIONS = {
     "strong_buy": {"zh": "强烈买入", "en": "Strong Buy", "ko": "적극 매수"},
     "buy": {"zh": "买入", "en": "Buy", "ko": "매수"},
+    "add": {"zh": "加仓", "en": "Add", "ko": "추가 매수"},
     "hold": {"zh": "持有", "en": "Hold", "ko": "보유"},
     "watch": {"zh": "观望", "en": "Watch", "ko": "관망"},
     "reduce": {"zh": "减仓", "en": "Reduce", "ko": "비중축소"},
@@ -985,9 +986,7 @@ def get_signal_level(advice: Any, score: Any, language: Optional[str]) -> tuple[
 
     if normalize_decision_action is not None:
         action = normalize_decision_action(advice)
-        if action == "add":
-            canonical = "buy"
-        elif action in {"hold", "watch", "reduce", "sell", "avoid", "alert", "buy"}:
+        if action in {"add", "hold", "watch", "reduce", "sell", "avoid", "alert", "buy"}:
             canonical = action
         else:
             canonical = _canonicalize_lookup_value(advice, _OPERATION_ADVICE_CANONICAL_MAP)
@@ -1006,6 +1005,8 @@ def get_signal_level(advice: Any, score: Any, language: Optional[str]) -> tuple[
         if score_signal == "strong_buy":
             return (_OPERATION_ADVICE_TRANSLATIONS["strong_buy"][normalized_language], "💚", "strong_buy")
         return (_OPERATION_ADVICE_TRANSLATIONS["buy"][normalized_language], "🟢", "buy")
+    if canonical == "add":
+        return (_OPERATION_ADVICE_TRANSLATIONS["add"][normalized_language], "🟢", "buy")
     if canonical == "hold":
         return (_OPERATION_ADVICE_TRANSLATIONS["hold"][normalized_language], "🟡", "hold")
     if canonical == "watch":
