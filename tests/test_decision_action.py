@@ -91,6 +91,10 @@ def test_normalize_decision_action_matrix(value: str, expected: str) -> None:
     assert normalize_decision_action(value) == expected
 
 
+def test_normalize_decision_action_prefers_avoid_for_dual_negation_no_buy_no_sell() -> None:
+    assert normalize_decision_action("不建议买入，也不建议卖出") == "avoid"
+
+
 @pytest.mark.parametrize(
     "value",
     [
@@ -677,6 +681,24 @@ def test_build_action_fields_keeps_negated_hold_over_legacy_decision_type(
     ) == {
         "action": "hold",
         "action_label": "持有",
+    }
+
+
+def test_display_action_fields_for_result_keeps_avoid_with_directional_legacy() -> None:
+    class Result:
+        operation_advice = "不建议买入，也不建议卖出"
+        action = None
+        action_label = None
+        decision_type = "buy"
+        report_language = "zh"
+        report_type = None
+        sentiment_score = 90
+        dashboard = None
+        guardrail_reason = None
+
+    assert display_action_fields_for_result(Result(), report_language="zh") == {
+        "action": "avoid",
+        "action_label": "回避",
     }
 
 

@@ -423,6 +423,8 @@ def normalize_decision_action(value: Any) -> Optional[DecisionAction]:
     if len(negated_matches) == 1:
         return next(iter(negated_matches))
     if len(negated_matches) > 1:
+        if "avoid" in negated_matches:
+            return "avoid"
         return None
 
     segmented_actions = _explicit_segment_actions(value)
