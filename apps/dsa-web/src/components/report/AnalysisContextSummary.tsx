@@ -71,6 +71,7 @@ const TEXT = {
     sourceUnavailable: '未记录输入来源',
     warnings: '告警',
     missingReasons: '缺失原因',
+    statusGuidance: '状态说明',
     diagnosticCodes: '诊断码',
     action: '处理',
     scope: '范围',
@@ -105,6 +106,7 @@ const TEXT = {
     sourceUnavailable: 'Input source not recorded',
     warnings: 'Warnings',
     missingReasons: 'Missing Reasons',
+    statusGuidance: 'Status Note',
     diagnosticCodes: 'Diagnostic Codes',
     action: 'Action',
     scope: 'Scope',
@@ -139,6 +141,7 @@ const TEXT = {
     sourceUnavailable: '입력 출처 기록 없음',
     warnings: '경고',
     missingReasons: '누락 사유',
+    statusGuidance: '상태 안내',
     diagnosticCodes: '진단 코드',
     action: '조치',
     scope: '범위',
@@ -249,6 +252,72 @@ const UNKNOWN_MISSING_REASON_LABELS: Record<ReportLanguage, string> = {
   zh: '未记录明确缺失原因',
   en: 'Missing reason was not recorded',
   ko: '명확한 누락 사유 기록 없음',
+};
+
+const STATUS_FALLBACK_GUIDANCE: Record<
+  ReportLanguage,
+  Partial<Record<AnalysisContextPackBlockStatus, string>>
+> = {
+  zh: {
+    missing: '数据未进入本次分析输入',
+    fetch_failed: '数据抓取失败，本次分析未使用该数据',
+    not_supported: '当前市场或标的不支持该数据',
+    fallback: '本次分析使用了降级数据路径',
+    stale: '本次分析使用了非最新数据',
+    estimated: '本次分析使用了估算数据',
+    partial: '仅部分数据进入本次分析输入',
+  },
+  en: {
+    missing: 'Data was not included in this analysis input',
+    fetch_failed: 'Data retrieval failed and this analysis did not use the data',
+    not_supported: 'This data is not supported for the current market or symbol',
+    fallback: 'This analysis used a fallback data path',
+    stale: 'This analysis used data that may not be current',
+    estimated: 'This analysis used estimated data',
+    partial: 'Only part of the data was included in this analysis input',
+  },
+  ko: {
+    missing: '데이터가 이번 분석 입력에 포함되지 않았습니다',
+    fetch_failed: '데이터 수집에 실패해 이번 분석에서 사용되지 않았습니다',
+    not_supported: '현재 시장 또는 종목은 이 데이터를 지원하지 않습니다',
+    fallback: '이번 분석은 강등 데이터 경로를 사용했습니다',
+    stale: '이번 분석은 최신이 아닐 수 있는 데이터를 사용했습니다',
+    estimated: '이번 분석은 추정 데이터를 사용했습니다',
+    partial: '데이터의 일부만 이번 분석 입력에 포함되었습니다',
+  },
+};
+
+const STATUS_FALLBACK_ACTIONS: Record<
+  ReportLanguage,
+  Partial<Record<AnalysisContextPackBlockStatus, string>>
+> = {
+  zh: {
+    missing: '检查数据源/配置/网络后重跑',
+    fetch_failed: '检查数据源/网络/限流后重跑',
+    not_supported: '更换受支持的数据源或结合其他指标',
+    fallback: '结合数据来源和告警复核降级结果',
+    stale: '检查数据更新时间后按需重跑',
+    estimated: '结合原始数据复核估算结果',
+    partial: '检查告警和数据源后重跑',
+  },
+  en: {
+    missing: 'Check the data source, configuration, and network, then rerun',
+    fetch_failed: 'Check the data source, network, and rate limits, then rerun',
+    not_supported: 'Use a supported data source or cross-check other indicators',
+    fallback: 'Review the fallback result against its source and warnings',
+    stale: 'Check the data timestamp and rerun if needed',
+    estimated: 'Cross-check the estimate against the source data',
+    partial: 'Check the warnings and data source, then rerun',
+  },
+  ko: {
+    missing: '데이터 소스/설정/네트워크 확인 후 다시 실행',
+    fetch_failed: '데이터 소스/네트워크/제한 확인 후 다시 실행',
+    not_supported: '지원되는 데이터 소스를 사용하거나 다른 지표와 교차 확인',
+    fallback: '데이터 출처와 경고를 기준으로 강등 결과 확인',
+    stale: '데이터 갱신 시각 확인 후 필요하면 다시 실행',
+    estimated: '원본 데이터와 추정 결과를 교차 확인',
+    partial: '경고와 데이터 소스 확인 후 다시 실행',
+  },
 };
 
 const STATUS_ORDER: AnalysisContextPackBlockStatus[] = [
@@ -464,9 +533,17 @@ export const AnalysisContextSummary: React.FC<AnalysisContextSummaryProps> = ({
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
             {overview.blocks.map((block) => {
               const style = STATUS_STYLE[block.status] || STATUS_STYLE.missing;
-              const missingReasonChips = block.missingReasons?.length
+              const hasMissingReasons = Boolean(block.missingReasons?.length);
+              const guidanceSummary = hasMissingReasons
+                ? block.missingReasons
+                  ?.map((reason) => getMissingReasonSummary(reason, reportLanguage))
+                  .join(', ')
+                : STATUS_FALLBACK_GUIDANCE[reportLanguage][block.status];
+              const guidanceChips = hasMissingReasons
                 ? getMissingReasonChips(block, overview, reportLanguage, text)
-                : [];
+                : STATUS_FALLBACK_ACTIONS[reportLanguage][block.status]
+                  ? [`${text.action}: ${STATUS_FALLBACK_ACTIONS[reportLanguage][block.status]}`]
+                  : [];
               return (
                 <div key={block.key} className="home-subpanel p-3">
                   <div className="flex items-start justify-between gap-3">
@@ -493,16 +570,14 @@ export const AnalysisContextSummary: React.FC<AnalysisContextSummaryProps> = ({
                       {text.warnings}: {block.warnings.join(', ')}
                     </p>
                   ) : null}
-                  {block.missingReasons?.length ? (
+                  {guidanceSummary ? (
                     <p className="mt-2 text-xs leading-5 text-muted-text">
-                      {text.missingReasons}: {block.missingReasons
-                        .map((reason) => getMissingReasonSummary(reason, reportLanguage))
-                        .join(', ')}
+                      {hasMissingReasons ? text.missingReasons : text.statusGuidance}: {guidanceSummary}
                     </p>
                   ) : null}
-                  {missingReasonChips.length ? (
+                  {guidanceChips.length ? (
                     <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] leading-5">
-                      {missingReasonChips.map((chip) => (
+                      {guidanceChips.map((chip) => (
                         <span key={chip} className="home-accent-chip max-w-full px-2 py-0.5 text-muted-text">
                           {chip}
                         </span>

@@ -150,6 +150,7 @@ const DETAIL_ORDER = [
   'fallback_to',
   'record_count',
   'attempts',
+  'analysis_input_block',
   'analysis_input_status',
   'analysis_input_missing_reasons',
   'evidence_scope',
@@ -295,19 +296,38 @@ const formatDetailValue = (
   return DETAIL_VALUE_LABELS[language][raw] || raw;
 };
 
+const normalizeDetailKey = (key: string): string => (
+  key
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .toLowerCase()
+);
+
 const getComponentDetailChips = (
   component: RunDiagnosticComponent,
   language: ReportLanguage,
 ): string[] => {
   const details = component.details || {};
+  const normalizedDetails = Object.entries(details).reduce<Record<string, unknown>>(
+    (result, [key, value]) => {
+      const normalizedKey = normalizeDetailKey(key);
+      if (
+        !Object.prototype.hasOwnProperty.call(result, normalizedKey)
+        || key === normalizedKey
+      ) {
+        result[normalizedKey] = value;
+      }
+      return result;
+    },
+    {},
+  );
   const orderedKeys = [
-    ...DETAIL_ORDER.filter((key) => Object.prototype.hasOwnProperty.call(details, key)),
-    ...Object.keys(details).filter((key) => !DETAIL_ORDER.includes(key)).sort(),
+    ...DETAIL_ORDER.filter((key) => Object.prototype.hasOwnProperty.call(normalizedDetails, key)),
+    ...Object.keys(normalizedDetails).filter((key) => !DETAIL_ORDER.includes(key)).sort(),
   ];
 
   return orderedKeys
     .map((key) => {
-      const value = formatDetailValue(key, details[key], language);
+      const value = formatDetailValue(key, normalizedDetails[key], language);
       if (!value) {
         return null;
       }
@@ -494,7 +514,7 @@ export const ReportDiagnostics: React.FC<ReportDiagnosticsProps> = ({
             <div className="min-w-0 space-y-2">
               <div className="home-subpanel flex max-w-full flex-wrap items-center gap-2 px-3 py-2">
                 <span className="label-uppercase">{text.primaryReason}</span>
-                <span className="min-w-0 text-sm leading-5 text-foreground" title={visibleSummary.reason}>
+                <span className="min-w-0 text-sm leading-5 text-foreground" aria-label={visibleSummary.reason}>
                   {compactText(visibleSummary.reason)}
                 </span>
               </div>
@@ -561,7 +581,7 @@ export const ReportDiagnostics: React.FC<ReportDiagnosticsProps> = ({
                         <p className="text-sm font-medium text-foreground">
                           {component.label}
                         </p>
-                        <p className="mt-1 text-xs leading-5 text-secondary-text" title={component.message}>
+                        <p className="mt-1 text-xs leading-5 text-secondary-text" aria-label={component.message}>
                           {compactText(component.message, 82)}
                         </p>
                       </div>

@@ -30,7 +30,7 @@ const diagnosticSummary: RunDiagnosticSummary = {
       details: {
         provider: 'baostock',
         attempts: 2,
-        error_type: 'TimeoutError',
+        errorType: 'TimeoutError',
       },
     },
     news: {
@@ -39,10 +39,11 @@ const diagnosticSummary: RunDiagnosticSummary = {
       status: 'degraded',
       message: '新闻检索返回 3 条结果，但新闻未进入本次分析输入；报告页相关资讯可能来自后续检索或历史持久化',
       details: {
-        record_count: 3,
-        analysis_input_status: 'missing',
-        analysis_input_missing_reasons: ['news_context_missing'],
-        evidence_scope: 'retrieval_vs_analysis_input',
+        recordCount: 3,
+        analysisInputBlock: 'news',
+        analysisInputStatus: 'missing',
+        analysisInputMissingReasons: ['news_context_missing'],
+        evidenceScope: 'retrieval_vs_analysis_input',
       },
     },
     notification: {
@@ -84,6 +85,9 @@ describe('ReportDiagnostics', () => {
     expect(screen.getByText('数据源: baostock')).toBeInTheDocument();
     expect(screen.getByText('错误类型: TimeoutError')).toBeInTheDocument();
     expect(screen.getByText('尝试: 2')).toBeInTheDocument();
+    expect(screen.getByText('记录数: 3')).toBeInTheDocument();
+    expect(screen.getByText('输入块: news')).toBeInTheDocument();
+    expect(screen.getByText('输入状态: missing')).toBeInTheDocument();
     expect(screen.getByText('真实原因: news_context_missing')).toBeInTheDocument();
     expect(screen.getByText('证据范围: 检索结果未进分析输入')).toBeInTheDocument();
     expect(screen.getByText('未配置')).toBeInTheDocument();
@@ -105,6 +109,32 @@ describe('ReportDiagnostics', () => {
     expect(screen.getByText('Run Status')).toBeInTheDocument();
     expect(screen.getByText('Degraded')).toBeInTheDocument();
     expect(screen.getByText('Fetch / LLM / save / notification path')).toBeInTheDocument();
+  });
+
+  it('keeps snake_case diagnostic detail keys compatible', () => {
+    const snakeCaseSummary: RunDiagnosticSummary = {
+      ...diagnosticSummary,
+      components: {
+        news: {
+          ...diagnosticSummary.components.news,
+          details: {
+            record_count: 4,
+            analysis_input_status: 'partial',
+            analysis_input_missing_reasons: ['news_context_missing'],
+            evidence_scope: 'analysis_input_only',
+          },
+        },
+      },
+    };
+
+    render(<ReportDiagnostics summary={snakeCaseSummary} />);
+
+    fireEvent.click(screen.getByText('运行状态'));
+
+    expect(screen.getByText('记录数: 4')).toBeInTheDocument();
+    expect(screen.getByText('输入状态: partial')).toBeInTheDocument();
+    expect(screen.getByText('真实原因: news_context_missing')).toBeInTheDocument();
+    expect(screen.getByText('证据范围: 仅记录分析输入状态')).toBeInTheDocument();
   });
 
   it('opens historical run flow from the diagnostics body', async () => {

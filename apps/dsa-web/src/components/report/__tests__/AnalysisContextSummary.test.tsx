@@ -144,6 +144,38 @@ describe('AnalysisContextSummary', () => {
     expect(screen.queryByText(/Suggested Action:/)).not.toBeInTheDocument();
   });
 
+  it('keeps unknown missing reason codes out of user-facing explanations', () => {
+    const unknownReasonOverview: AnalysisContextPackOverview = {
+      ...overview,
+      blocks: [{
+        key: 'fundamentals',
+        label: '基本面',
+        status: 'fetch_failed',
+        source: 'fundamental_pipeline',
+        warnings: [],
+        missingReasons: ['brand_new_internal_code'],
+      }],
+      counts: {
+        available: 0,
+        missing: 0,
+        notSupported: 0,
+        fallback: 0,
+        stale: 0,
+        estimated: 0,
+        partial: 0,
+        fetchFailed: 1,
+      },
+    };
+
+    render(<AnalysisContextSummary overview={unknownReasonOverview} />);
+
+    fireEvent.click(screen.getAllByText('输入数据块')[0]);
+
+    expect(screen.getByText('缺失原因: 未记录明确缺失原因')).toBeInTheDocument();
+    expect(screen.queryByText(/缺失原因:.*brand_new_internal_code/)).not.toBeInTheDocument();
+    expect(screen.getByText('诊断码: brand_new_internal_code')).toBeInTheDocument();
+  });
+
   it('surfaces degraded non-zero states in the collapsed summary', () => {
     const degradedOverview: AnalysisContextPackOverview = {
       ...overview,
@@ -164,15 +196,39 @@ describe('AnalysisContextSummary', () => {
           warnings: ['stale_fundamental'],
           missingReasons: [],
         },
+        {
+          key: 'technical',
+          label: '技术',
+          status: 'partial',
+          source: 'technical_pipeline',
+          warnings: ['technical_partial'],
+          missingReasons: [],
+        },
+        {
+          key: 'chip',
+          label: '筹码',
+          status: 'estimated',
+          source: 'estimated_chip',
+          warnings: [],
+          missingReasons: [],
+        },
+        {
+          key: 'daily_bars',
+          label: '日线',
+          status: 'not_supported',
+          source: null,
+          warnings: [],
+          missingReasons: [],
+        },
       ],
       counts: {
         available: 0,
         missing: 0,
-        notSupported: 0,
+        notSupported: 1,
         fallback: 1,
         stale: 1,
-        estimated: 0,
-        partial: 0,
+        estimated: 1,
+        partial: 1,
         fetchFailed: 0,
       },
     };
@@ -185,6 +241,22 @@ describe('AnalysisContextSummary', () => {
     expect(within(panel).getByText('缺失 0')).toBeVisible();
     expect(within(panel).getAllByText('降级 1')[0]).toBeVisible();
     expect(within(panel).getAllByText('过期 1')[0]).toBeVisible();
+    expect(within(panel).getAllByText('估算 1')[0]).toBeVisible();
+    expect(within(panel).getAllByText('部分可用 1')[0]).toBeVisible();
+    expect(within(panel).getAllByText('不支持 1')[0]).toBeVisible();
+
+    fireEvent.click(within(panel).getAllByText('输入数据块')[0]);
+
+    const quoteBlock = screen.getByText('行情').closest('.home-subpanel');
+    expect(quoteBlock).not.toBeNull();
+    expect(within(quoteBlock as HTMLElement).getByText('状态说明: 本次分析使用了降级数据路径')).toBeInTheDocument();
+    expect(within(quoteBlock as HTMLElement).getByText('处理: 结合数据来源和告警复核降级结果')).toBeInTheDocument();
+    expect(within(quoteBlock as HTMLElement).queryByText(/诊断码:/)).not.toBeInTheDocument();
+
+    expect(screen.getByText('状态说明: 本次分析使用了非最新数据')).toBeInTheDocument();
+    expect(screen.getByText('状态说明: 仅部分数据进入本次分析输入')).toBeInTheDocument();
+    expect(screen.getByText('状态说明: 本次分析使用了估算数据')).toBeInTheDocument();
+    expect(screen.getByText('状态说明: 当前市场或标的不支持该数据')).toBeInTheDocument();
   });
 
   it('does not render without an overview', () => {
