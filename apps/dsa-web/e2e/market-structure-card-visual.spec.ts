@@ -248,14 +248,31 @@ async function renderMarketStructureCard(distIndexPath: string, testInfo: TestIn
     expect(screenshot).toBeTruthy();
     expect(screenshot.length).toBeGreaterThan(1024);
     const screenshotRelPath = path.relative(process.cwd(), screenshotPath);
+    const reproductionCommand = 'cd apps/dsa-web && npx playwright test e2e/market-structure-card-visual.spec.ts';
+    const artifactManifestPath = testInfo.outputPath('market-structure-card-visual-artifact.txt');
+    writeFile(
+      artifactManifestPath,
+      [
+        'MarketStructureCard visual evidence attached',
+        `Screenshot attachment: market-structure-card-visual.png`,
+        `Local fallback path: ${screenshotRelPath}`,
+        `Repro command: ${reproductionCommand}`,
+      ].join('\n'),
+    );
 
     testInfo.annotations.push({
       type: 'info',
-      description: `Market structure card visual evidence generated at: ${screenshotRelPath}`,
+      description:
+        'Market structure card visual evidence attached in Playwright artifacts; '
+        + 'also keep reproduction path for reviewer reference if artifact is not directly linked.',
     });
     await testInfo.attach('market-structure-card-visual', {
       path: screenshotPath,
       contentType: 'image/png',
+    });
+    await testInfo.attach('market-structure-card-visual-evidence', {
+      path: artifactManifestPath,
+      contentType: 'text/plain',
     });
     await testInfo.attach('market-structure-card-visual-bytes', {
       body: screenshot,

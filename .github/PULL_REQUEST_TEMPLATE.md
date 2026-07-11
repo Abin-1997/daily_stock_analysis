@@ -37,6 +37,7 @@ git diff --name-only "$BASE_REF"..HEAD
 - 文件总数 / 变更行数（建议粘贴 `git diff --stat "$BASE_REF"..HEAD`）：
 - 文件清单（按实际 diff 全量，逐项列出）：
 - 文档更新文件（`docs/*`）：
+- 若统计/清单与上方命令输出不一致，请在提交前先修正，避免 `Summary` 与 `Scope Of Change` 产生审查阻塞。
 
 ## Issue Link
 
@@ -107,6 +108,8 @@ python -m pytest -m "not network"
 > 若本 PR 修改 Web 设置字段（字段、文案或帮助文案），截图或替代证据必须可定位到对应设置项区域并可追溯至变更项；该项为必填。
 
 > 若本 PR 修改 Web UI 或报告展示且无法获取截图，原因栏必须给出可复现替代证据（例如 Playwright 截图产物路径 + 命令），且不得留空。
+- 市场结构卡片等局部 Web 组件修改时，可直接附 e2e 产物附件名（如 `market-structure-card-visual`）与复现命令：
+  - `cd apps/dsa-web && npx playwright test e2e/market-structure-card-visual.spec.ts`
 
 ## Compatibility And Risk
 
