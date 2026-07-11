@@ -170,6 +170,11 @@ function isMissingPlaywrightBrowser(error: unknown): boolean {
   return error instanceof Error && error.message.includes("Executable doesn't exist");
 }
 
+function isHttpUrl(value: string): boolean {
+  const lower = value.trim().toLowerCase();
+  return lower.startsWith('http://') || lower.startsWith('https://');
+}
+
 async function startStaticServer(rootDir: string): Promise<{
   url: string;
   close: () => Promise<void>;
@@ -259,13 +264,14 @@ async function renderMarketStructureCard(distIndexPath: string, testInfo: TestIn
     const externalEvidenceDir = process.env.DSA_WEB_VISUAL_EVIDENCE
       ? path.resolve(process.env.DSA_WEB_VISUAL_EVIDENCE)
       : '';
-    let externalScreenshotPath: string = '';
-    if (externalEvidenceDir) {
+    const externalEvidenceUrl = process.env.DSA_WEB_VISUAL_EVIDENCE && isHttpUrl(process.env.DSA_WEB_VISUAL_EVIDENCE)
+      ? process.env.DSA_WEB_VISUAL_EVIDENCE
+      : '';
+    if (externalEvidenceDir && !externalEvidenceUrl) {
       try {
         fs.mkdirSync(externalEvidenceDir, { recursive: true });
         const externalScreenshot = path.join(externalEvidenceDir, 'market-structure-card-visual.png');
         fs.copyFileSync(screenshotPath, externalScreenshot);
-        externalScreenshotPath = externalScreenshot;
       } catch (copyError) {
         testInfo.annotations.push({
           type: 'warning',
@@ -280,11 +286,8 @@ async function renderMarketStructureCard(distIndexPath: string, testInfo: TestIn
       `Playwright attachment name (artifact evidence): ${artifactName}`,
       `Repro command: ${reproductionCommand}`,
     ];
-    if (externalEvidenceDir && externalScreenshotPath) {
-      evidenceNotes.push(
-        `External evidence copy dir: ${externalEvidenceDir}`,
-        `External screenshot: ${path.relative(process.cwd(), externalScreenshotPath)}`,
-      );
+    if (externalEvidenceUrl) {
+      evidenceNotes.push(`External visual evidence URL: ${externalEvidenceUrl}`);
     }
     if (githubRepository && githubRunId) {
       evidenceNotes.push(
@@ -294,15 +297,12 @@ async function renderMarketStructureCard(distIndexPath: string, testInfo: TestIn
       );
     } else {
       evidenceNotes.push(
-        '未在 GitHub Actions 运行，不具备公开 artifact 链接；本地路径仅作复现兜底，不建议用于 PR 审核直接引用。',
+        '未在 GitHub Actions 运行，不具备公开 artifact 链接；请在 PR 中附上截图附件名和本地复现命令。',
       );
     }
-    if (!externalEvidenceDir) {
-      evidenceNotes.push(
-        `请将测试产物附加到 PR 描述/评论：截图附件名 ${artifactName} + 复现命令 ${reproductionCommand}`,
-      );
-    }
-    evidenceNotes.push('若需外部可追溯复核，请在有 PR 权限的环境重跑该测试并上传上述附件。');
+    evidenceNotes.push(
+      `若需外部可追溯复核，请在有 PR 权限的环境重跑该测试并在该动作页下载附件 ${artifactName} 后在 PR 中补充下载链接。`,
+    );
     writeFile(
       artifactManifestPath,
       evidenceNotes.join('\n'),
@@ -315,7 +315,7 @@ async function renderMarketStructureCard(distIndexPath: string, testInfo: TestIn
         + `Attachment: ${artifactName}。`
         + (githubRepository && githubRunId
           ? `请在 PR 说明/评论附上 ${artifactHint} 中的该附件。`
-          : '未在 GitHub Actions 运行，请将该截图附件或外链输出到 PR 说明/评论。'),
+          : '未在 GitHub Actions 运行，请将该截图附件或可访问外链输出到 PR 说明/评论。'),
     });
     await testInfo.attach('market-structure-card-visual', {
       path: screenshotPath,
