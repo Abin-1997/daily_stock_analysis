@@ -215,9 +215,11 @@ daily_stock_analysis/
 4. 选择运行模式
 5. 点击绿色的 `Run workflow` 确认
 
+如需临时只分析一只 A 股，不必修改 `STOCK_LIST`：左侧选择 `单股分析`，点击 `Run workflow`，输入 6 位股票代码（例如 `688256`）后确认。本次运行固定使用 `stocks-only`，输入只作为 `--stocks` 参数传给当前任务，不会写回仓库 Variables 或 Secrets。
+
 ### 5. 完成！
 
-默认每个工作日 **18:00（北京时间）** 自动执行。
+当前 Fork 仅支持手动触发，不再自动定时执行。
 
 ---
 

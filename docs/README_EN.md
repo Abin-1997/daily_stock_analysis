@@ -146,9 +146,11 @@ Open the `Actions` tab and click `I understand my workflows, go ahead and enable
 
 `Actions` -> `Daily Stock Analysis` -> `Run workflow` -> `Run workflow`.
 
+To analyze one A-share temporarily: `Actions` -> `单股分析` -> `Run workflow` -> enter a six-digit stock code.
+
 #### Done
 
-By default, the workflow runs every weekday at 18:00 Beijing time and skips non-trading days. Forced runs, trading-day checks, and resume rules are covered in the [Full Guide](./full-guide_EN.md#scheduled-task-configuration).
+This fork is configured for manual runs only and no longer starts on a schedule. Non-trading days are still skipped by default. Forced runs, trading-day checks, and resume rules are covered in the [Full Guide](./full-guide_EN.md#scheduled-task-configuration).
 
 ### Option 2: Local / Docker Deployment
 

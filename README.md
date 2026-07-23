@@ -145,9 +145,11 @@
 
 `Actions` → `每日股票分析` → `Run workflow` → `Run workflow`
 
+临时只分析一只 A 股：`Actions` → `单股分析` → `Run workflow` → 输入 6 位股票代码。
+
 #### 完成
 
-默认每个**工作日 18:00（北京时间）**自动执行，也可手动触发。默认非交易日（含 A/H/US 节假日）不执行；强制运行、交易日检查、断点续传等规则见 [完整指南](docs/full-guide.md#定时任务配置)。
+当前 Fork 已改为仅手动触发，不再自动定时执行。默认非交易日（含 A/H/US 节假日）不执行；强制运行、交易日检查、断点续传等规则见 [完整指南](docs/full-guide.md#定时任务配置)。
 
 ### 方式二：[客户端配置教程](https://www.bilibili.com/video/BV11FEb66Eyr/) / 本地运行 / Docker 部署
 

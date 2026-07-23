@@ -185,9 +185,11 @@ To get started quickly, you need at minimum:
 4. Select run mode
 5. Click green `Run workflow` to confirm
 
+To analyze one A-share without editing `STOCK_LIST`, select the `单股分析` (`Single Stock Analysis`) workflow, click `Run workflow`, and enter a six-digit code such as `688256`. This entry always uses `stocks-only`; the code is passed to the current run through `--stocks` and is never written back to repository Variables or Secrets.
+
 ### 5. Done!
 
-Default schedule: Every weekday at **18:00 (Beijing Time)** automatic execution.
+This fork supports manual runs only and no longer starts on a schedule.
 
 ---
 

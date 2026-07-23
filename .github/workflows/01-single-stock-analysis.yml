@@ -1,0 +1,24 @@
+name: 单股分析
+run-name: 单股分析 ${{ inputs.stock_code }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      stock_code:
+        description: '请输入6位A股代码（例如 688256）'
+        required: true
+        type: string
+      force_run:
+        description: '强制运行（非交易日测试时使用）'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  analyze-single-stock:
+    uses: ./.github/workflows/00-daily-analysis.yml
+    with:
+      mode: stocks-only
+      stock_code: ${{ inputs.stock_code }}
+      force_run: ${{ inputs.force_run }}
+    secrets: inherit
